@@ -1,0 +1,4 @@
+./sounds/*.dca
+.env
+.idea
+test.json
