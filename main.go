@@ -4,12 +4,15 @@ import (
 	"os"
 	"io"
 	"log"
+	"sync"
 	"strings"
+	"strconv"
 	"net/http"
 	"encoding/json"
 	"encoding/binary"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/polds/imgbase64"
 )
 
 var (
@@ -17,6 +20,11 @@ var (
 	voiceChannel *discordgo.VoiceConnection
 	token = os.Getenv("DISCORD_API_TOKEN")
 )
+
+func isNumeric(s string) bool {
+	_, err := strconv.ParseFloat(s, 64)
+	return err == nil
+}
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime)
@@ -43,18 +51,56 @@ func main()  {
 		}
 	})
 
-	//go func() {
-	//
-	//	for data := range dota2DataChannel {
-	//		log.Println(data.Map.ClockTime)
-	//	}
-	//
-	//}()
+	go func() {
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		for data := range dota2DataChannel {
+
+			runes := &Runes{ Data: strconv.Itoa(data.Map.ClockTime), Saied: false }
+
+			if runes.AreRunesUp() {
+				playSound("runes")
+				wg.Done()
+			}
+		}
+
+		wg.Wait()
+
+	}()
 
 	discord, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Println(err)
 	}
+
+	discord.AddHandler(func (s *discordgo.Session, guild *discordgo.GuildCreate) {
+
+		var exists = false
+
+		for _, guildEmoji := range guild.Emojis {
+			if guildEmoji.Name == "peepoblush" {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			img, err := imgbase64.FromLocal("./emojies/peepoblush.png")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			_, err = discord.GuildEmojiCreate(guild.ID, "peepoblush", img, []string {})
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+
+	})
 
 	discord.AddHandler(func (s *discordgo.Session, event *discordgo.Ready) {
 		s.UpdateStatus(0, "Dota 2 [-help]")
@@ -82,14 +128,79 @@ func main()  {
 				return
 			}
 
-			command := strings.Split(m.Content, "-")[1]
-			switch command {
+			prefixCommand := strings.Split(m.Content, "-")
+
+			command := strings.Split(prefixCommand[1], " ")
+
+			var pepeEmoji *discordgo.Emoji
+
+			for _, guildEmoji := range g.Emojis {
+				if guildEmoji.Name == "peepoblush" {
+					pepeEmoji = guildEmoji
+					break
+				}
+			}
+
+			switch command[0] {
 			case "help":
 				discord.ChannelMessageSend(channel.ID, "This bot is a runes reminder bot for dota 2 games that works with" +
 					" Dota 2 GSI API. isn't that cool ? :)")
 			break
 			case "gm":
-				discord.ChannelMessageSend(channel.ID, "Hello :)")
+
+				var matchID int
+
+				if len(command) == 2 {
+
+					if isNumeric(command[1]) {
+						matchID, err = strconv.Atoi(command[1])
+					} else {
+						discord.ChannelMessageSend(channel.ID, "***Match ID*** should be a number!")
+						return
+					}
+
+				} else {
+
+					discord.ChannelMessageSend(channel.ID, "No match found <:" + pepeEmoji.Name + ":" + pepeEmoji.ID + ">\n" +
+						"***Try with an argument like***  `-gm [match_id]`")
+					return
+				}
+
+				lookingMsg := "**Looking for a game with match id** `" + strconv.Itoa(matchID) + "`\n"
+				message, _ := discord.ChannelMessageSend(channel.ID, lookingMsg + "Please wait ...")
+
+				s.ChannelTyping(channel.ID)
+
+				players, _ := GetPlayerDatasByMatchID(matchID)
+
+				if players["dire"] == nil && players["radiant"] == nil {
+
+					discord.ChannelMessageEdit(channel.ID, message.ID, "No match found <:" + pepeEmoji.Name + ":" + pepeEmoji.ID + ">\n")
+					break
+				}
+
+				msg := "**Found a game with match id** `" + strconv.Itoa(matchID) + "`\n"
+
+				msg += "\n***Suggest to BAN :octagonal_sign:*** \n"
+
+				for _, direPlayer := range players["dire"] {
+					for i, hero := range direPlayer.MostHeroPlayed {
+						if i == 3 { break }
+						msg += " **`" + hero.Hero.LocalizedName + "`** \n"
+					}
+				}
+
+				msg += "\n***Dire Players :video_game: *** \n"
+				for _, direPlayer := range players["dire"] {
+					msg += direPlayer.Name + "`" + direPlayer.RankName + "`\n"
+				}
+
+				msg += "\n***Radiant Players :video_game: *** \n"
+				for _, radiantPlayer := range players["radiant"] {
+					msg += radiantPlayer.Name + "`" + radiantPlayer.RankName + "`\n"
+				}
+
+				discord.ChannelMessageEdit(channel.ID, message.ID, msg)
 			break
 			case "leave":
 				if voiceChannel != nil {
