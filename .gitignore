@@ -2,3 +2,4 @@
 .env
 /.idea
 struct.json
+.DS_Store

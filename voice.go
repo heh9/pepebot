@@ -8,7 +8,7 @@ import (
 )
 
 // loadSound attempts to load an encoded sound file from disk.
-func loadSound(sound string) ([][]byte, error) {
+func (a *Application) LoadSound(sound string) ([][]byte, error) {
 
 	buffer := make([][]byte, 0)
 
@@ -55,25 +55,25 @@ func loadSound(sound string) ([][]byte, error) {
 	return buffer, nil
 }
 
-func playSound(sound string) bool {
+func (a *Application) PlaySound(sound string) bool {
 
-	if voiceChannel != nil {
+	if a.VoiceChannel != nil {
 
-		buffer, err := loadSound(sound)
+		buffer, err := a.LoadSound(sound)
 
 		if err != nil {
 			return false
 		}
 
 		// Start speaking.
-		voiceChannel.Speaking(true)
+		a.VoiceChannel.Speaking(true)
 
 		// Send the buffer data.
 		for _, buff := range buffer {
-			voiceChannel.OpusSend <- buff
+			a.VoiceChannel.OpusSend <- buff
 		}
 
-		voiceChannel.Speaking(false)
+		a.VoiceChannel.Speaking(false)
 
 		return true
 	}

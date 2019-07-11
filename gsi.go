@@ -1,6 +1,16 @@
 package main
 
-type Response struct {
+const (
+	PreGame               = "DOTA_GAMERULES_STATE_PRE_GAME"
+	PostGame              = "DOTA_GAMERULES_STATE_POST_GAME"
+	StrategyTime          = "DOTA_GAMERULES_STATE_STRATEGY_TIME"
+	HeroSelection         = "DOTA_GAMERULES_STATE_HERO_SELECTION"
+	InProgress            = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
+	WaitForMapToLoad      = "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD"
+	WaitForPlayersToLoad  = "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD"
+)
+
+type GSIResponse struct {
 
 	Auth                           map[string] string      `json:"auth"`
 
@@ -90,10 +100,10 @@ type Response struct {
 	}
 }
 
-func (r *Response) getAuthToken() string {
+func (r *GSIResponse) getAuthToken() string {
 	return r.Auth["token"]
 }
 
-func (r *Response) CheckAuthToken(token string) bool {
+func (r *GSIResponse) CheckAuthToken(token string) bool {
 	return r.getAuthToken() == token
 }
