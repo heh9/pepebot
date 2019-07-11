@@ -24,4 +24,6 @@ RUN go get -t
 EXPOSE 9001
 
 # build project
-CMD ["go", "run", "*.go"]
+RUN go build -o pepe_bot .
+
+CMD ["./pepe_bot"]
