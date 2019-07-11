@@ -16,7 +16,7 @@ WORKDIR $GOPATH/src/pepe.bot
 ADD .env.example .env
 
 # Install project dependencies
-RUN go get
+RUN go get -t
 
 # Expose port
 EXPOSE 9001

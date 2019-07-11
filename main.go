@@ -3,13 +3,13 @@ package main
 import (
 	"os"
 	"log"
-	"arrays"
 	"strings"
+	"./disc"
 	"strconv"
 	"net/http"
 	"encoding/json"
-	"pepe.bot/disc"
 	"github.com/polds/imgbase64"
+	"github.com/MrJoshLab/arrays"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
 )
