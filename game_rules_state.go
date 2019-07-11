@@ -1,0 +1,11 @@
+package main
+
+const (
+	PreGame               = "DOTA_GAMERULES_STATE_PRE_GAME"
+	PostGame              = "DOTA_GAMERULES_STATE_POST_GAME"
+	StrategyTime          = "DOTA_GAMERULES_STATE_STRATEGY_TIME"
+	HeroSelection         = "DOTA_GAMERULES_STATE_HERO_SELECTION"
+	InProgress            = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
+	WaitForMapToLoad      = "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD"
+	WaitForPlayersToLoad  = "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD"
+)

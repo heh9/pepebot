@@ -1,21 +1,43 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 	"strconv"
+	"math/rand"
 )
 
 type Runes struct {
-	Data   string
-	Saied  bool
+	ClockTime   string
+	RuneTimes   []string
+	Sounds      []string
 }
 
-func (r *Runes) AreRunesUp() bool {
+func NewRunesType() *Runes {
+	return &Runes{
+		Sounds: []string {
+			"runes",
+			"runes_hello",
+			"runes_milad",
+			"runes_mohammad",
+		},
+	}
+}
 
-	unixIntValue, err := strconv.ParseInt(r.Data, 10, 64)
+func (r *Runes) RNG(min int, max int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(max-min) + min
+}
+
+func (r *Runes) GetRandomVoiceFileName() string {
+	return r.Sounds[r.RNG(0, len(r.Sounds))]
+}
+
+func (r *Runes) Up() (bool, string) {
+
+	unixIntValue, err := strconv.ParseInt(r.ClockTime, 10, 64)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	timeStamp := time.Unix(unixIntValue, 0).UTC()
@@ -25,23 +47,23 @@ func (r *Runes) AreRunesUp() bool {
 	seconds := strconv.Itoa(secs)
 	minutes := strconv.Itoa(mins)
 
-	fmt.Println("Minutes : " + minutes, " Seconds : " + seconds)
+	clock := minutes + ":" + seconds
 
 	if minutes == "0" {
-		return false
+		return false, clock
 	}
 
 	if len(minutes) == 2 {
 		if (minutes[1:2] == "4" && seconds == "45") ||
 			(minutes[1:2] == "9" && seconds == "45") {
-			return true
+			return true, clock
 		}
 	} else {
 		if (minutes == "4" && seconds == "45") ||
 			(minutes == "9" && seconds == "45") {
-			return true
+			return true, clock
 		}
 	}
 
-	return false
+	return false, clock
 }
