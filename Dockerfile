@@ -15,6 +15,8 @@ WORKDIR $GOPATH/src/pepe.bot
 # Generate .env file
 ADD .env.example .env
 
+RUN git clone https://go.googlesource.com/crypto $GOPATH/src/golang.org/x/crypto
+
 # Install project dependencies
 RUN go get -t
 
