@@ -21,6 +21,7 @@ func main()  {
 		DiscordAuthToken:      os.Getenv("DISCORD_API_TOKEN"),
 		VoiceChannel:          nil,
 		GameEnded:             false,
+		GsiChannel:            make(chan *GSIResponse),
 		Runes:                 NewRunesType(),
 
 		// GSI Config
