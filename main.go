@@ -22,6 +22,8 @@ func main()  {
 		VoiceChannel:          nil,
 		GameEnded:             false,
 		GsiChannel:            make(chan *GSIResponse),
+		GameEndChannel:        make(chan *GameEndChannel),
+
 		Runes:                 NewRunesType(),
 
 		// GSI Config
