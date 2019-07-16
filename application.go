@@ -300,19 +300,18 @@ func (a *Application) RegisterAndServeBot() {
 
 				if len(command) == 2 {
 
-					matchID, _ := strconv.Atoi(command[1])
-					if matchID == 0 {
-
+					matchID, err := strconv.ParseInt(command[1], 10, 64)
+					if err != nil || matchID == 0 {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " Could not find the match " +
 							a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
 
 					msg, err := api.GetMatchHistory(
-						int64(matchID),
-						true,
+						matchID,
 						false,
-						true, a.GetEmoji("peepoblush"))
+						false,
+						false, a.GetEmoji("peepoblush"))
 					if err != nil {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
 							" " + err.Error() +
