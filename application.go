@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"net/http"
 	"reflect"
-	"pepe.bot/ai"
+	"pepe.bot/api"
 	"pepe.bot/disc"
 	"encoding/json"
 	"github.com/polds/imgbase64"
@@ -118,20 +118,12 @@ func (a *Application) CheckGameEndStatus() {
 			a.VoiceChannel = nil
 		}
 
-		if game.Won {
+		matchID, _ := strconv.Atoi(game.MatchId)
 
-			a.Client.ChannelMessageSend(a.MainTextChannelId,
-				"```bash\n" +
-					`"` + "Game ended as win with match id [" + game.MatchId + `]"` +
-					"``` Weeeeee areeeee the championssssssss my friendsss " + a.GetEmoji("peepoblush").MessageFormat())
-		} else {
+		msg, _ := api.GetMatchHistory(int64(matchID), true, game.Won,
+			true, a.GetEmoji("peepoblush"))
 
-			a.Client.ChannelMessageSend(a.MainTextChannelId,
-				"```diff\n" +
-					"- Game ended as loss with match id [" + game.MatchId + "]" +
-					"``` - Try a bit harder next time " + a.GetEmoji("peepoblush").MessageFormat())
-		}
-
+		a.Client.ChannelMessageSend(a.MainTextChannelId, msg)
 	}
 
 }
@@ -217,12 +209,12 @@ func (a *Application) RegisterAndServeBot() {
 
 				message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a live match ...")
 
-				var response *ai.SpectateFriendGameResponse
-				response, err = ai.SpectateFriendGame(player.SteamID)
+				var response *api.SpectateFriendGameResponse
+				response, err = api.SpectateFriendGame(player.SteamID)
 				if err != nil || response.Code == 0 {
 
 					// try again
-					response, err = ai.SpectateFriendGame("76561198372283905")
+					response, err = api.SpectateFriendGame("76561198372283905")
 					if err != nil || response.Code == 0 {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID,
 							m.Author.Mention() + " You're not in a live match! " + a.GetEmoji("peepoblush").MessageFormat())
@@ -232,9 +224,9 @@ func (a *Application) RegisterAndServeBot() {
 
 				steamServerID := strconv.Itoa(int(response.Result.ServerSteamId))
 
-				resp, err := ai.GetRealTimeStats(steamServerID)
+				resp, err := api.GetRealTimeStats(steamServerID)
 				if err != nil {
-					resp, err = ai.GetRealTimeStats(steamServerID)
+					resp, err = api.GetRealTimeStats(steamServerID)
 					if err != nil {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID,
 								m.Author.Mention() + " You're not in a live match! " + a.GetEmoji("peepoblush").MessageFormat())
@@ -245,7 +237,7 @@ func (a *Application) RegisterAndServeBot() {
 				radiant := resp.Teams[0]
 				dire := resp.Teams[1]
 
-				players := map[string] []ai.Player {
+				players := map[string] []api.Player {
 					"radiant": radiant.Players,
 					"dire": dire.Players,
 				}
@@ -262,7 +254,7 @@ func (a *Application) RegisterAndServeBot() {
 				var heros = map[int] opendota.Hero{}
 
 				for _, radPl := range players["radiant"] {
-					hero, err := ai.GetMostHeroPlayed(radPl.AccountID)
+					hero, err := api.GetMostHeroPlayed(radPl.AccountID)
 					if err == nil {
 						reflect.ValueOf(heros).SetMapIndex(reflect.ValueOf(hero.ID), reflect.ValueOf(hero))
 					}
@@ -280,7 +272,7 @@ func (a *Application) RegisterAndServeBot() {
 
 				msg += "\n***Dire Players :video_game: *** \n"
 				for _, direPlayer := range players["dire"] {
-					pl, err := ai.GetPlayerOpenDotaProfile(direPlayer.AccountID)
+					pl, err := api.GetPlayerOpenDotaProfile(direPlayer.AccountID)
 					if err != nil || pl.Rank == "" {
 						msg += "`" + direPlayer.Name + " | Unknown` \n"
 					} else {
@@ -290,7 +282,7 @@ func (a *Application) RegisterAndServeBot() {
 
 				msg += "\n***Radiant Players :video_game: *** \n"
 				for _, radiantPlayer := range players["radiant"] {
-					pl, err := ai.GetPlayerOpenDotaProfile(radiantPlayer.AccountID)
+					pl, err := api.GetPlayerOpenDotaProfile(radiantPlayer.AccountID)
 					if err != nil || pl.Rank == "" {
 						msg += "`" + radiantPlayer.Name + " | Unknown` \n"
 					} else {
@@ -300,6 +292,45 @@ func (a *Application) RegisterAndServeBot() {
 
 				discord.ChannelMessageEdit(channel.ID, message.ID, msg)
 				break
+			case "mh":
+
+				s.ChannelTyping(channel.ID)
+
+				message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
+
+				if len(command) == 2 {
+
+					matchID, _ := strconv.Atoi(command[1])
+					if matchID == 0 {
+
+						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " Could not find the match " +
+							a.GetEmoji("peepoblush").MessageFormat())
+						return
+					}
+
+					msg, err := api.GetMatchHistory(
+						int64(matchID),
+						true,
+						false,
+						true, a.GetEmoji("peepoblush"))
+					if err != nil {
+						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
+							" " + err.Error() +
+							" " + a.GetEmoji("peepoblush").MessageFormat())
+						return
+					}
+
+					a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " " + msg)
+					return
+
+				} else {
+
+					a.Client.ChannelMessageSend(
+						channel.ID,
+						m.Author.Mention() + " No match_id argument found " + a.GetEmoji("peepoblush").MessageFormat() + "\n" +
+							"***Try with an argument like***  `-mh [match_id]`")
+					return
+				}
 			case "join":
 
 				if a.VoiceChannel != nil {
@@ -337,7 +368,7 @@ func (a *Application) RegisterAndServeBot() {
 					if coll := collection.New(a.Runes.Sounds); !coll.Has(command[1]) {
 						a.Client.ChannelMessageSend(
 							channel.ID,
-							m.Author.Mention() + " Could not found sound " + command[1] + " " + a.GetEmoji("peepoblush").MessageFormat())
+							m.Author.Mention() + " Could not find sound " + command[1] + " " + a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
 

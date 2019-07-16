@@ -1,4 +1,4 @@
-package ai
+package api
 
 import (
 	"strconv"
@@ -7,11 +7,10 @@ import (
 	"github.com/iamalirezaj/go-opendota"
 )
 
-var heros []opendota.Hero
+var heros, _, _ = client.HeroService.Heroes()
 
 func GetMostHeroPlayed(accountID int64) (opendota.Hero, error) {
 	client := opendota.NewClient(http.DefaultClient)
-	heros, _, _ = client.HeroService.Heroes()
 	playerHeros, _, _ := client.PlayerService.Heroes(accountID, nil)
 	return GetHeroById(playerHeros[0].HeroID)
 }
