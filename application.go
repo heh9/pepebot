@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"errors"
 	"strings"
 	"strconv"
@@ -43,6 +44,9 @@ type Application struct {
 
 	// discord target voice channel
 	VoiceChannel         *discordgo.VoiceConnection
+
+	TimerChannel         chan *Timer
+	Timers               []*Timer
 
 	DiscordAuthToken,
 	MainTextChannelId,
@@ -87,10 +91,10 @@ func (a *Application) CheckRunes()  {
 
 					endStruct := &GameEndChannel{
 						MatchId: data.Map.Matchid,
+						Won:     false,
 					}
 
 					if data.Player.TeamName != data.Map.WinTeam {
-						endStruct.Won = false
 						a.PlaySound("loss")
 					} else {
 						endStruct.Won = true
@@ -128,6 +132,15 @@ func (a *Application) CheckGameEndStatus() {
 
 }
 
+func (a *Application) FindTimerWithMessageID(messageID string) *Timer {
+	for _, timer := range a.Timers {
+		if timer.MessageReaction.ID == messageID {
+			return timer
+		}
+	}
+	return nil
+}
+
 func (a *Application) RegisterAndServeBot() {
 
 	discord, err := discordgo.New("Bot " + a.DiscordAuthToken)
@@ -137,9 +150,50 @@ func (a *Application) RegisterAndServeBot() {
 
 	a.Client = discord
 
+	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Disconnect) {
+		if a.VoiceChannel != nil {
+			a.VoiceChannel.Disconnect()
+			a.VoiceChannel = nil
+		}
+	})
+
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Ready) {
-		s.UpdateStatus(0, "Dota 2 [-help]")
+
 		log.Println("Logged in as !" + event.User.ID)
+
+		go func() {
+
+			for timer := range a.TimerChannel {
+				a.Timers = append(a.Timers, timer)
+				go timer.Start()
+			}
+
+		}()
+	})
+
+	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Connect) {
+		s.UpdateStatus(0, "Dota 2 [-help]")
+	})
+
+	a.Client.AddHandler(func (s *discordgo.Session, react *discordgo.MessageReactionAdd) {
+
+		switch react.MessageReaction.Emoji.Name {
+		case "🛑":
+			if react.UserID != "562782841784631296" {
+				if timer := a.FindTimerWithMessageID(react.MessageID); timer != nil {
+					timer.Stop(react.UserID)
+				}
+			}
+			break
+		case "👀":
+			if react.UserID != "562782841784631296" {
+				if timer := a.FindTimerWithMessageID(react.MessageID); timer != nil {
+					timer.UpdateTimerMessage(react.UserID)
+				}
+			}
+			break
+		}
+
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, guild *discordgo.GuildCreate) {
@@ -214,7 +268,7 @@ func (a *Application) RegisterAndServeBot() {
 				if err != nil || response.Code == 0 {
 
 					// try again
-					response, err = api.SpectateFriendGame("76561198372283905")
+					response, err = api.SpectateFriendGame(player.SteamID)
 					if err != nil || response.Code == 0 {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID,
 							m.Author.Mention() + " You're not in a live match! " + a.GetEmoji("peepoblush").MessageFormat())
@@ -294,18 +348,19 @@ func (a *Application) RegisterAndServeBot() {
 				break
 			case "mh":
 
-				s.ChannelTyping(channel.ID)
-
-				message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
-
 				if len(command) == 2 {
 
 					matchID, err := strconv.ParseInt(command[1], 10, 64)
 					if err != nil || matchID == 0 {
-						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " Could not find the match " +
+						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
+							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
+
+					message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
+
+					s.ChannelTyping(channel.ID)
 
 					msg, err := api.GetMatchHistory(
 						matchID,
@@ -330,36 +385,87 @@ func (a *Application) RegisterAndServeBot() {
 							"***Try with an argument like***  `-mh [match_id]`")
 					return
 				}
-			case "join":
+			case "rejoin":
 
 				if a.VoiceChannel != nil {
 					a.VoiceChannel.Disconnect()
 					a.VoiceChannel = nil
 				}
 
-				for _, vs := range g.VoiceStates {
+				a.JoinChannel(channel, m, g)
+				break
+			case "timer":
 
-					if vs.UserID == m.Author.ID {
+				if len(command) > 1 {
 
-						var ch *discordgo.Channel
+					var timeValue time.Duration
 
-						voicech := disc.Channel{ID: vs.ChannelID, Client: a.Client}
-						_, _, ch, a.VoiceChannel = voicech.Join()
+					for _, cmd := range command[1:]  {
+						pattern := strings.Split(cmd, ":")
+						if len(pattern) > 0 || len(pattern) < 2 {
 
-						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " :white_check_mark: Bot successfully connected to " + ch.Name)
-						return
+							timer := &Timer{
+								ChannelID:    channel.ID,
+								MessageCreate:      m,
+								DoneChannel:  make(chan bool),
+								Client:       a.Client,
+								Hours:        "00",
+								Minutes:      "00",
+								Seconds:      "00",
+							}
+
+							if pattern[0] == "m" {
+								min, _  := strconv.ParseInt(pattern[1], 10, 64)
+								minutes := time.Duration(min)
+								timer.Minutes = pattern[1]
+								timeValue += time.Duration(minutes * time.Minute)
+							}
+
+							if pattern[0] == "s" {
+								sec, _  := strconv.ParseInt(pattern[1], 10, 64)
+								seconds := time.Duration(sec)
+								timer.Seconds = pattern[1]
+								timeValue += time.Duration(seconds * time.Second)
+							}
+
+							if pattern[0] == "h" {
+								hour, _  := strconv.ParseInt(pattern[1], 10, 64)
+								hours := time.Duration(hour)
+								timer.Hours = pattern[1]
+								timeValue += time.Duration(hours * time.Second)
+							}
+
+							timer.Value = timeValue
+
+							a.TimerChannel <- timer
+
+						} else {
+							a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
+								" Time should be like the below pattern \n" +
+								"*** Try like this *** `-timer m:5 s:2` " +
+								a.GetEmoji("peepoblush").MessageFormat())
+							return
+						}
 					}
-				}
 
-				if a.VoiceChannel == nil {
+				} else {
+					a.Client.ChannelMessageSend(
+						channel.ID,
+						m.Author.Mention() + " No time pattern found " + a.GetEmoji("peepoblush").MessageFormat() + "\n" +
+							"***Try with an argument like*** `-timer m:5 s:2`")
+					return
+				}
+			case "join":
+
+				if a.VoiceChannel != nil {
 
 					a.Client.ChannelMessageSend(
 						channel.ID,
-						m.Author.Mention() + " You must be connected to a voice channel! \n" +
-							"Connect to a voice channel and try -join!")
+						m.Author.Mention() + " The session already connected to a voice channel. `Try -rejoin`.")
 					return
 				}
-				break
+
+				a.JoinChannel(channel, m, g)
 			case "play":
 
 				if len(command) == 2 {
@@ -399,6 +505,32 @@ func (a *Application) RegisterAndServeBot() {
 	}
 
 	log.Println("Pepe.bot is now running!")
+}
+
+func (a *Application) JoinChannel(channel *discordgo.Channel, m *discordgo.MessageCreate, g *discordgo.Guild)  {
+
+	for _, vs := range g.VoiceStates {
+
+		if vs.UserID == m.Author.ID {
+
+			var ch *discordgo.Channel
+
+			voicech := disc.Channel{ID: vs.ChannelID, Client: a.Client}
+			_, _, ch, a.VoiceChannel = voicech.Join()
+
+			a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " :white_check_mark: Bot successfully connected to " + ch.Name)
+			return
+		}
+	}
+
+	if a.VoiceChannel == nil {
+
+		a.Client.ChannelMessageSend(
+			channel.ID,
+			m.Author.Mention() + " You must be connected to a voice channel! \n" +
+				"Connect to a voice channel and try -join!")
+		return
+	}
 }
 
 func (a *Application) GetEmoji(name string) *discordgo.Emoji {

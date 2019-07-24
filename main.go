@@ -24,6 +24,8 @@ func main()  {
 		GsiChannel:            make(chan *GSIResponse),
 		GameEndChannel:        make(chan *GameEndChannel),
 
+		TimerChannel:          make(chan *Timer),
+
 		Runes:                 NewRunesType(),
 
 		// GSI Config

@@ -29,7 +29,7 @@ func GetMostHeroDamage(match opendota.Match) (int ,opendota.Hero) {
 	return mostHeroDamage, hero
 }
 
-func GetMostKillsHero(match opendota.Match) (int, opendota.Hero) {
+func GetMostHeroKills(match opendota.Match) (int, opendota.Hero) {
 
 	var mostHeroKills = 0
 	var mostHeroDamagePlayer = opendota.MatchPlayer{}
@@ -160,7 +160,7 @@ func GetMatchHistory(
 		message += fmt.Sprintln()
 	}
 
-	kills, hero := GetMostKillsHero(match)
+	kills, hero := GetMostHeroKills(match)
 	if kills != 0 {
 		message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
 		message += fmt.Sprintln()
