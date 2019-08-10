@@ -348,19 +348,21 @@ func (a *Application) RegisterAndServeBot() {
 
 				if len(command) == 2 {
 
-					if command[1] == "" {
+					var matchID = command[1]
+
+					if _, err := strconv.Atoi(matchID); err != nil {
 						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
 							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
 
-					message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
-
 					s.ChannelTyping(channel.ID)
 
+					message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
+
 					msg, err := api.GetMatchHistory(
-						command[1],
+						matchID,
 						false,
 						false,
 						false, a.GetEmoji("peepoblush"))
