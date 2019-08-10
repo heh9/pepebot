@@ -122,9 +122,7 @@ func (a *Application) CheckGameEndStatus() {
 			a.VoiceChannel = nil
 		}
 
-		matchID, _ := strconv.Atoi(game.MatchId)
-
-		msg, _ := api.GetMatchHistory(int64(matchID), true, game.Won,
+		msg, _ := api.GetMatchHistory(game.MatchId, true, game.Won,
 			true, a.GetEmoji("peepoblush"))
 
 		a.Client.ChannelMessageSend(a.MainTextChannelId, msg)
@@ -350,8 +348,7 @@ func (a *Application) RegisterAndServeBot() {
 
 				if len(command) == 2 {
 
-					matchID, err := strconv.ParseInt(command[1], 10, 64)
-					if err != nil || matchID == 0 {
+					if command[1] == "" {
 						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
 							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
@@ -363,7 +360,7 @@ func (a *Application) RegisterAndServeBot() {
 					s.ChannelTyping(channel.ID)
 
 					msg, err := api.GetMatchHistory(
-						matchID,
+						command[1],
 						false,
 						false,
 						false, a.GetEmoji("peepoblush"))
