@@ -354,7 +354,6 @@ func (a *Application) RegisterAndServeBot() {
 						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
 							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
-						log.Println(reflect.TypeOf(matchID), matchID, err)
 						return
 					}
 
