@@ -350,10 +350,11 @@ func (a *Application) RegisterAndServeBot() {
 
 					var matchID = command[1]
 
-					if _, err := strconv.Atoi(matchID); err != nil {
+					if _, err := strconv.ParseInt(matchID,10,64); err != nil {
 						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
 							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
+						log.Println(reflect.TypeOf(matchID), matchID, err)
 						return
 					}
 
