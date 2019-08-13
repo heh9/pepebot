@@ -26,7 +26,7 @@ func main()  {
 
 		TimerChannel:          make(chan *Timer),
 
-		Runes:                 NewRunesType(),
+		Runes:                 NewRunes(),
 
 		// GSI Config
 		GSIAuthToken:          os.Getenv("DOTA2_GSI_AUTH_TOKEN"),

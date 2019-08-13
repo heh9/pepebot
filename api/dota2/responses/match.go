@@ -34,7 +34,7 @@ type Match struct {
 	} `json:"result"`
 }
 
-func (m *Match) GetMostHeroDamage() (int, Hero) {
+func (m *Match) GetMostHeroDamage() (int, Hero, Player) {
 
 	var mostHeroDamage = 0
 	var mostHeroDamagePlayer = Player{}
@@ -48,10 +48,10 @@ func (m *Match) GetMostHeroDamage() (int, Hero) {
 
 	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
 
-	return mostHeroDamage, hero
+	return mostHeroDamage, hero, mostHeroDamagePlayer
 }
 
-func (m *Match) GetMostHeroKills() (int, Hero) {
+func (m *Match) GetMostHeroKills() (int, Hero, Player) {
 
 	var mostHeroKills = 0
 	var mostHeroDamagePlayer = Player{}
@@ -65,10 +65,27 @@ func (m *Match) GetMostHeroKills() (int, Hero) {
 
 	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
 
-	return mostHeroKills, hero
+	return mostHeroKills, hero, mostHeroDamagePlayer
 }
 
-func (m *Match) GetMostHeroHealing() (int, Hero) {
+func (m *Match) GetMostHeroLastHits() (int, Hero, Player) {
+
+	var MostHeroLastHits = 0
+	var mostHeroDamagePlayer = Player{}
+
+	for i, player := range m.Result.Players {
+		if i == 0 || player.LastHits > MostHeroLastHits {
+			MostHeroLastHits = player.LastHits
+			mostHeroDamagePlayer = player
+		}
+	}
+
+	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
+
+	return MostHeroLastHits, hero, mostHeroDamagePlayer
+}
+
+func (m *Match) GetMostHeroHealing() (int, Hero, Player) {
 
 	var mostHeroHealing = 0
 	var mostHeroDamagePlayer = Player{}
@@ -82,10 +99,10 @@ func (m *Match) GetMostHeroHealing() (int, Hero) {
 
 	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
 
-	return mostHeroHealing, hero
+	return mostHeroHealing, hero, mostHeroDamagePlayer
 }
 
-func (m *Match) GetMostHeroDenies() (int, Hero) {
+func (m *Match) GetMostHeroDenies() (int, Hero, Player) {
 
 	var denies = 0
 	var mostHeroDamagePlayer = Player{}
@@ -99,7 +116,7 @@ func (m *Match) GetMostHeroDenies() (int, Hero) {
 
 	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
 
-	return denies, hero
+	return denies, hero, mostHeroDamagePlayer
 }
 
 func (m *Match) GetMostCampsStackedHero() (int, Hero) {
@@ -107,7 +124,7 @@ func (m *Match) GetMostCampsStackedHero() (int, Hero) {
 	return 0, Hero{}
 }
 
-func (m *Match) GetMostHeroTowerDamage() (int, Hero) {
+func (m *Match) GetMostHeroTowerDamage() (int, Hero, Player) {
 
 	var damage = 0
 	var mostHeroDamagePlayer = Player{}
@@ -121,5 +138,5 @@ func (m *Match) GetMostHeroTowerDamage() (int, Hero) {
 
 	hero, _ := GetHeroByID(mostHeroDamagePlayer.HeroID)
 
-	return damage, hero
+	return damage, hero, mostHeroDamagePlayer
 }

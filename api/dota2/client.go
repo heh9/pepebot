@@ -31,9 +31,7 @@ func (c *Client) Match(matchID string) (*responses.Match, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

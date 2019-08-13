@@ -1,7 +1,7 @@
 package responses
 
 type Player struct {
-	AccountID         interface{} `json:"account_id"`
+	AccountID         int64 `json:"account_id"`
 	PlayerSlot        int `json:"player_slot"`
 	HeroID            int `json:"hero_id"`
 	Item0             int `json:"item_0"`

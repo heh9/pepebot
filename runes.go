@@ -13,7 +13,7 @@ type Runes struct {
 	Sounds      []string
 }
 
-func NewRunesType() *Runes {
+func NewRunes() *Runes {
 	return &Runes{
 		Sounds: []string {
 			"runes",
@@ -30,7 +30,7 @@ func (r *Runes) RNG(min int, max int) int {
 }
 
 func (r *Runes) GetRandomVoiceFileName() string {
-	return r.Sounds[r.RNG(0, len(r.Sounds))]
+	return r.Sounds[r.RNG(0, len(r.Sounds) - 1)]
 }
 
 func (r *Runes) Up() (bool, string) {

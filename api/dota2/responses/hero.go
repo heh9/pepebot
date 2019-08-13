@@ -12,6 +12,7 @@ type Hero struct {
 	ID             int      `json:"id"`
 	LocalizedName  string   `json:"localized_name"`
 	Name           string   `json:"name"`
+	Icon           string `json:"icon"`
 }
 
 var heros []Hero

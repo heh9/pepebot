@@ -16,7 +16,8 @@ func GetMatchHistory(
 	showGameStatus bool,
 	won bool,
 	showRandomJokeCommentForStatus bool,
-	emoji *discordgo.Emoji) (string, error) {
+	emoji *discordgo.Emoji,
+	discord *discordgo.Session) (string, error) {
 
 	message := ""
 
@@ -58,33 +59,82 @@ func GetMatchHistory(
 
 	message += fmt.Sprintln() + fmt.Sprintln()
 
-	damage, hero := match.GetMostHeroDamage()
-	if damage != 0 {
-		message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s`", damage, hero.LocalizedName)
+	if damage, hero, player := match.GetMostHeroDamage(); damage != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s` %s", damage, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s`", damage, hero.LocalizedName)
+		}
+
 		message += fmt.Sprintln()
 	}
 
-	kills, hero := match.GetMostHeroKills()
-	if kills != 0 {
-		message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
+
+	if kills, hero, player := match.GetMostHeroKills(); kills != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Kills                          **(%d)** `%s` %s", kills, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
+		}
+
 		message += fmt.Sprintln()
 	}
 
-	healing, hero := match.GetMostHeroHealing()
-	if healing != 0 {
-		message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s`", healing, hero.LocalizedName)
+	if lastHits, hero, player := match.GetMostHeroLastHits(); lastHits != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Hero Last Hits       **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Hero Last Hits       **(%d)** `%s`", lastHits, hero.LocalizedName)
+		}
+
 		message += fmt.Sprintln()
 	}
 
-	denies, hero := match.GetMostHeroDenies()
-	if denies != 0 {
-		message += fmt.Sprintf("Most Denies                    **(%d)** `%s`", denies, hero.LocalizedName)
+
+	if healing, hero, player := match.GetMostHeroHealing(); healing != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s` %s", healing, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s`", healing, hero.LocalizedName)
+		}
+
 		message += fmt.Sprintln()
 	}
 
-	towerDamage, hero := match.GetMostHeroTowerDamage()
-	if towerDamage != 0 {
-		message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s`", towerDamage, hero.LocalizedName)
+	if denies, hero, player := match.GetMostHeroDenies(); denies != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Denies                    **(%d)** `%s` %s", denies, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Denies                    **(%d)** `%s`", denies, hero.LocalizedName)
+		}
+
+		message += fmt.Sprintln()
+	}
+
+	if towerDamage, hero, player := match.GetMostHeroTowerDamage(); towerDamage != 0 {
+
+		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+
+			message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s` %s", towerDamage, hero.LocalizedName, u.Mention())
+		} else {
+
+			message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s`", towerDamage, hero.LocalizedName)
+		}
 	}
 
 	if showRandomJokeCommentForStatus {

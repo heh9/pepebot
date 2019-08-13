@@ -123,7 +123,7 @@ func (a *Application) CheckGameEndStatus() {
 		}
 
 		msg, _ := api.GetMatchHistory(game.MatchId, true, game.Won,
-			true, a.GetEmoji("peepoblush"))
+			true, a.GetEmoji("peepoblush"), a.Client)
 
 		a.Client.ChannelMessageSend(a.MainTextChannelId, msg)
 	}
@@ -153,6 +153,8 @@ func (a *Application) RegisterAndServeBot() {
 			a.VoiceChannel.Disconnect()
 			a.VoiceChannel = nil
 		}
+
+		log.Println("disconnected from discord!")
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Ready) {
@@ -229,18 +231,6 @@ func (a *Application) RegisterAndServeBot() {
 					m.Author.Mention() + " This bot is a runes reminder bot for dota 2 games that works with" +
 					" Dota 2 GSI API. \n" +
 					"Isn't that cool ? " + a.GetEmoji("peepoblush").MessageFormat())
-				break
-			case "loss_pattern":
-				a.Client.ChannelMessageSend(channel.ID,
-					"```diff\n" +
-						"- Game ended as loss with match id [match_id]" +
-						"``` - Try a bit harder next time " + a.GetEmoji("peepoblush").MessageFormat())
-				break
-			case "win_pattern":
-				a.Client.ChannelMessageSend(channel.ID,
-					"```bash\n" +
-						`"` + "Game ended as win with match id [match_id]" + `"` +
-						"``` Weeeeee areeeee the championssssssss my friendsss " + a.GetEmoji("peepoblush").MessageFormat())
 				break
 			case "leave":
 				if a.VoiceChannel != nil {
@@ -365,7 +355,7 @@ func (a *Application) RegisterAndServeBot() {
 						matchID,
 						false,
 						false,
-						false, a.GetEmoji("peepoblush"))
+						false, a.GetEmoji("peepoblush"), a.Client)
 					if err != nil {
 						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
 							" " + err.Error() +
@@ -498,8 +488,7 @@ func (a *Application) RegisterAndServeBot() {
 	})
 
 	// Open the websocket and begin listening.
-	err = a.Client.Open()
-	if err != nil {
+	if err = a.Client.Open(); err != nil {
 		log.Println("Error opening Discord session: ", err)
 	}
 
