@@ -90,10 +90,10 @@ func GetMatchHistory(
 
 		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
 
-			message += fmt.Sprintf("Most Hero Last Hits       **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
+			message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
 		} else {
 
-			message += fmt.Sprintf("Most Hero Last Hits       **(%d)** `%s`", lastHits, hero.LocalizedName)
+			message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s`", lastHits, hero.LocalizedName)
 		}
 
 		message += fmt.Sprintln()
