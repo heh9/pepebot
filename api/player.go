@@ -1,11 +1,11 @@
 package api
 
 import (
-	"os"
-	"io/ioutil"
 	"encoding/json"
-	"github.com/pkg/errors"
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"os"
 )
 
 type SteamPlayer struct {
@@ -43,7 +43,9 @@ func GetPlayerByAccountID(accountID int64) (*SteamPlayer, error)  {
 	}
 
 	var players []*SteamPlayer
-	json.Unmarshal(byteValue, &players)
+	if err := json.Unmarshal(byteValue, &players); err != nil {
+		return nil, nil
+	}
 
 	for _, player := range players {
 		if player.AccountID == accountID {

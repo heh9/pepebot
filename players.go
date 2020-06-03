@@ -1,10 +1,10 @@
 package main
 
 import (
-	"os"
-	"io/ioutil"
 	"encoding/json"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"os"
 )
 
 type SteamPlayer struct {
@@ -26,7 +26,7 @@ func FindSteamPlayer(discordID string) (*SteamPlayer, error) {
 	}
 
 	var players []*SteamPlayer
-	json.Unmarshal(byteValue, &players)
+	_ = json.Unmarshal(byteValue, &players)
 
 	for _, player := range players {
 		if player.DiscordID == discordID {

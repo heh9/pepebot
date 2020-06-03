@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"fmt"
-	"time"
-	"strconv"
 	"github.com/bwmarrin/discordgo"
+	"log"
+	"strconv"
+	"time"
 )
 
 type Timer struct {
@@ -34,9 +34,9 @@ func (timer *Timer) UpdateTimerMessage(reactedUserId string)  {
 
 	clock := time.Since(timer.StartedTime).Round(time.Second)
 
-	tickTime := time.Duration(time.Duration(clock.Seconds()) * time.Second)
+	tickTime := time.Duration(clock.Seconds()) * time.Second
 
-	remainingDuration := time.Duration(timer.Value - tickTime).Round(time.Second)
+	remainingDuration := (timer.Value - tickTime).Round(time.Second)
 
 	reactedUser, _ := timer.Client.User(reactedUserId)
 
@@ -58,7 +58,7 @@ func (timer *Timer) UpdateTimerMessage(reactedUserId string)  {
 
 	if !timer.Done {
 
-		timer.Client.ChannelMessageEdit(timer.ChannelID, timer.MessageReaction.ID,
+		_, _ = timer.Client.ChannelMessageEdit(timer.ChannelID, timer.MessageReaction.ID,
 			fmt.Sprintf(
 				"%s <:alarm_clock:603595913058975758> Timer started with duration : `%s:%s:%s` \n" +
 					"You can use the 🛑 button to stop the timer or see the remaining time with 👀 button! \n\n" +
@@ -71,7 +71,7 @@ func (timer *Timer) UpdateTimerMessage(reactedUserId string)  {
 				remainingMinutes,
 				remainingSeconds))
 
-		timer.Client.MessageReactionRemove(timer.ChannelID, timer.MessageReaction.ID, "👀", reactedUser.ID)
+		_ = timer.Client.MessageReactionRemove(timer.ChannelID, timer.MessageReaction.ID, "👀", reactedUser.ID)
 	}
 }
 
@@ -82,7 +82,7 @@ func (timer *Timer) Stop(user string)  {
 
 func (timer *Timer) sendDoneMessage(DoneByUser bool)  {
 
-	timer.Client.ChannelMessageEdit(timer.ChannelID, timer.MessageReaction.ID,
+	_, _ = timer.Client.ChannelMessageEdit(timer.ChannelID, timer.MessageReaction.ID,
 		fmt.Sprintf(
 			"%s <:alarm_clock:603595913058975758> Timer started with duration : `%s:%s:%s` \n" +
 				"💥 Timer Expired! \n\n",
@@ -91,16 +91,16 @@ func (timer *Timer) sendDoneMessage(DoneByUser bool)  {
 			timer.Minutes,
 			timer.Seconds))
 
-	timer.Client.MessageReactionsRemoveAll(timer.ChannelID, timer.MessageReaction.ID)
+	_ = timer.Client.MessageReactionsRemoveAll(timer.ChannelID, timer.MessageReaction.ID)
 
 	if DoneByUser {
 
-		timer.Client.ChannelMessageSend(timer.ChannelID,
+		_, _ = timer.Client.ChannelMessageSend(timer.ChannelID,
 			"@here <:alarm_clock:603595913058975758> Timer stopped by: " + timer.ReactedUser.Mention())
 
 	} else {
 
-		timer.Client.ChannelMessageSend(timer.ChannelID,
+		_, _ = timer.Client.ChannelMessageSend(timer.ChannelID,
 			fmt.Sprintf("@here <:alarm_clock:603595913058975758> Timer ended with duration: `%s:%s:%s`",
 				timer.Hours, timer.Minutes, timer.Seconds))
 	}

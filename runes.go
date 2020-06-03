@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"time"
-	"strconv"
 	"math/rand"
+	"strconv"
+	"time"
 )
 
 type Runes struct {
@@ -16,21 +16,21 @@ type Runes struct {
 func NewRunes() *Runes {
 	return &Runes{
 		Sounds: []string {
-			"runes",
-			"runes_hello",
-			"runes_milad",
-			"runes_mohammad",
+			"jebaited1",
+			"jebaited2",
+			"pepegas",
+			"pepegas2",
 		},
 	}
 }
 
-func (r *Runes) RNG(min int, max int) int {
+func RNG(min int, max int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max-min) + min
 }
 
 func (r *Runes) GetRandomVoiceFileName() string {
-	return r.Sounds[r.RNG(0, len(r.Sounds) - 1)]
+	return r.Sounds[RNG(0, len(r.Sounds) - 1)]
 }
 
 func (r *Runes) Up() (bool, string) {

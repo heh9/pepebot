@@ -1,11 +1,11 @@
 package dota2
 
 import (
-	"fmt"
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
-	"pepe.bot/api/dota2/responses"
+	"fmt"
+	"github.com/MrJoshLab/pepe.bot/api/dota2/responses"
+	"io/ioutil"
+	"net/http"
 )
 
 type Client struct {

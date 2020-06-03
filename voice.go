@@ -1,16 +1,16 @@
 package main
 
 import (
-	"os"
+	"encoding/binary"
 	"io"
 	"log"
-	"encoding/binary"
+	"os"
 )
 
 // loadSound attempts to load an encoded sound file from disk.
-func (a *Application) LoadSound(sound string) ([][]byte, error) {
+func (a *Application) LoadSound(sound string) (buffer [][]byte, err error) {
 
-	buffer := make([][]byte, 0)
+	buffer = make([][]byte, 0)
 
 	file, err := os.Open("./sounds/" + sound + ".dca")
 	if err != nil {
@@ -66,14 +66,14 @@ func (a *Application) PlaySound(sound string) bool {
 		}
 
 		// Start speaking.
-		a.VoiceChannel.Speaking(true)
+		_ = a.VoiceChannel.Speaking(true)
 
 		// Send the buffer data.
 		for _, buff := range buffer {
 			a.VoiceChannel.OpusSend <- buff
 		}
 
-		a.VoiceChannel.Speaking(false)
+		_ = a.VoiceChannel.Speaking(false)
 
 		return true
 	}

@@ -1,9 +1,9 @@
 package api
 
 import (
-	"net/http"
+	"github.com/MrJoshLab/pepe.bot/api/dota2/responses"
 	"github.com/iamalirezaj/go-opendota"
-	"pepe.bot/api/dota2/responses"
+	"net/http"
 	"strconv"
 )
 

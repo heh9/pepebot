@@ -3,3 +3,5 @@
 /.idea
 struct.json
 .DS_Store
+convert_to_dca.sh
+sounds/mp3

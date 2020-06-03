@@ -1,8 +1,8 @@
 package disc
 
 import (
-	"log"
 	"github.com/bwmarrin/discordgo"
+	"log"
 )
 
 type Channel struct {

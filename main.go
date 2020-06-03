@@ -1,9 +1,9 @@
 package main
 
 import (
-	"os"
-	"log"
 	_ "github.com/joho/godotenv/autoload"
+	"log"
+	"os"
 )
 
 func init() {

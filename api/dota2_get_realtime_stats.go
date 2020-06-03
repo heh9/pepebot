@@ -1,12 +1,12 @@
 package api
 
 import (
-	"os"
-	"net/http"
 	"encoding/json"
-	_ "github.com/joho/godotenv/autoload"
 	"errors"
 	"github.com/iamalirezaj/go-opendota"
+	_ "github.com/joho/godotenv/autoload"
+	"net/http"
+	"os"
 )
 
 type Response struct {

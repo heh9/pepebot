@@ -1,14 +1,14 @@
 package api
 
 import (
-	"os"
-	"log"
 	"fmt"
-	"time"
-	"strconv"
-	"pepe.bot/api/dota2"
-	"github.com/pkg/errors"
+	"github.com/MrJoshLab/pepe.bot/api/dota2"
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
+	"log"
+	"os"
+	"strconv"
+	"time"
 )
 
 func GetMatchHistory(

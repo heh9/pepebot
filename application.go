@@ -1,20 +1,17 @@
 package main
 
 import (
-	"log"
-	"time"
-	"errors"
-	"strings"
-	"strconv"
-	"net/http"
-	"reflect"
-	"pepe.bot/api"
-	"pepe.bot/disc"
 	"encoding/json"
-	"github.com/polds/imgbase64"
+	"errors"
 	"github.com/MrJoshLab/arrays"
+	"github.com/MrJoshLab/pepe.bot/api"
+	"github.com/MrJoshLab/pepe.bot/disc"
 	"github.com/bwmarrin/discordgo"
-	"github.com/iamalirezaj/go-opendota"
+	"github.com/polds/imgbase64"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 type GameEndChannel struct {
@@ -98,7 +95,7 @@ func (a *Application) CheckRunes()  {
 						a.PlaySound("loss")
 					} else {
 						endStruct.Won = true
-						a.PlaySound("win")
+						a.PlaySound(a.getRandomWinSound())
 					}
 
 					a.Runes.RuneTimes = []string {}
@@ -113,19 +110,23 @@ func (a *Application) CheckRunes()  {
 
 }
 
+func (a *Application) getRandomWinSound() string {
+	return []string{"win", "gta"}[RNG(0, 1)]
+}
+
 func (a *Application) CheckGameEndStatus() {
 
 	for game := range a.GameEndChannel {
 
 		if a.VoiceChannel != nil {
-			a.VoiceChannel.Disconnect()
+			_ = a.VoiceChannel.Disconnect()
 			a.VoiceChannel = nil
 		}
 
 		msg, _ := api.GetMatchHistory(game.MatchId, true, game.Won,
 			true, a.GetEmoji("peepoblush"), a.Client)
 
-		a.Client.ChannelMessageSend(a.MainTextChannelId, msg)
+		_, _ = a.Client.ChannelMessageSend(a.MainTextChannelId, msg)
 	}
 
 }
@@ -150,7 +151,7 @@ func (a *Application) RegisterAndServeBot() {
 
 	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Disconnect) {
 		if a.VoiceChannel != nil {
-			a.VoiceChannel.Disconnect()
+			_ = a.VoiceChannel.Disconnect()
 			a.VoiceChannel = nil
 		}
 
@@ -158,46 +159,17 @@ func (a *Application) RegisterAndServeBot() {
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Ready) {
-
 		log.Println("Logged in as !" + event.User.ID)
-
-		go func() {
-
-			for timer := range a.TimerChannel {
-				a.Timers = append(a.Timers, timer)
-				go timer.Start()
-			}
-
-		}()
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Connect) {
-		s.UpdateStatus(0, "Dota 2 [-help]")
-	})
-
-	a.Client.AddHandler(func (s *discordgo.Session, react *discordgo.MessageReactionAdd) {
-
-		switch react.MessageReaction.Emoji.Name {
-		case "🛑":
-			if react.UserID != "562782841784631296" {
-				if timer := a.FindTimerWithMessageID(react.MessageID); timer != nil {
-					timer.Stop(react.UserID)
-				}
-			}
-			break
-		case "👀":
-			if react.UserID != "562782841784631296" {
-				if timer := a.FindTimerWithMessageID(react.MessageID); timer != nil {
-					timer.UpdateTimerMessage(react.UserID)
-				}
-			}
-			break
-		}
-
+		_ = s.UpdateStatus(0, "Dota 2")
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, guild *discordgo.GuildCreate) {
-		a.Emojis = guild.Emojis
+		if guild.ID == "415566764697583628" {
+			a.Emojis = guild.Emojis
+		}
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -227,112 +199,16 @@ func (a *Application) RegisterAndServeBot() {
 
 			switch command[0] {
 			case "help":
-				a.Client.ChannelMessageSend(channel.ID,
+				_, _ = a.Client.ChannelMessageSend(channel.ID,
 					m.Author.Mention() + " This bot is a runes reminder bot for dota 2 games that works with" +
 					" Dota 2 GSI API. \n" +
 					"Isn't that cool ? " + a.GetEmoji("peepoblush").MessageFormat())
 				break
 			case "leave":
 				if a.VoiceChannel != nil {
-					a.VoiceChannel.Disconnect()
+					_ = a.VoiceChannel.Disconnect()
 					a.VoiceChannel = nil
 				}
-				break
-			case "gm":
-
-				s.ChannelTyping(channel.ID)
-
-				player, err := FindSteamPlayer(m.Author.ID)
-				if err != nil {
-					a.Client.ChannelMessageSend(channel.ID,
-						m.Author.Mention() + " " + err.Error() + " " + a.GetEmoji("peepoblush").MessageFormat())
-					return
-				}
-
-				message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a live match ...")
-
-				var response *api.SpectateFriendGameResponse
-				response, err = api.SpectateFriendGame(player.SteamID)
-				if err != nil || response.Code == 0 {
-
-					// try again
-					response, err = api.SpectateFriendGame(player.SteamID)
-					if err != nil || response.Code == 0 {
-						a.Client.ChannelMessageEdit(channel.ID, message.ID,
-							m.Author.Mention() + " You're not in a live match! " + a.GetEmoji("peepoblush").MessageFormat())
-						return
-					}
-				}
-
-				steamServerID := strconv.Itoa(int(response.Result.ServerSteamId))
-
-				resp, err := api.GetRealTimeStats(steamServerID)
-				if err != nil {
-					resp, err = api.GetRealTimeStats(steamServerID)
-					if err != nil {
-						a.Client.ChannelMessageEdit(channel.ID, message.ID,
-								m.Author.Mention() + " You're not in a live match! " + a.GetEmoji("peepoblush").MessageFormat())
-							return
-					}
-				}
-
-				radiant := resp.Teams[0]
-				dire := resp.Teams[1]
-
-				players := map[string] []api.Player {
-					"radiant": radiant.Players,
-					"dire": dire.Players,
-				}
-
-				matchID := strconv.Itoa(int(resp.Match.MatchID))
-
-				msg := " **Found a game with match id** `" + matchID + "`\n"
-				message, _ = discord.ChannelMessageEdit(channel.ID, message.ID, msg + "Loading ... please wait")
-
-				s.ChannelTyping(channel.ID)
-
-				msg += "\n***Suggest to BAN :octagonal_sign:*** \n"
-
-				var heros = map[int] opendota.Hero{}
-
-				for _, radPl := range players["radiant"] {
-					hero, err := api.GetMostHeroPlayed(radPl.AccountID)
-					if err == nil {
-						reflect.ValueOf(heros).SetMapIndex(reflect.ValueOf(hero.ID), reflect.ValueOf(hero))
-					}
-				}
-
-				for _, hero := range heros {
-					msg += "`" + hero.LocalizedName + "` \n"
-				}
-
-				if players["dire"] == nil && players["radiant"] == nil {
-					discord.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
-						"No players found " + a.GetEmoji("peepoblush").MessageFormat())
-					break
-				}
-
-				msg += "\n***Dire Players :video_game: *** \n"
-				for _, direPlayer := range players["dire"] {
-					pl, err := api.GetPlayerOpenDotaProfile(direPlayer.AccountID)
-					if err != nil || pl.Rank == "" {
-						msg += "`" + direPlayer.Name + " | Unknown` \n"
-					} else {
-						msg += "`" + direPlayer.Name + " | " + pl.Rank + "` \n"
-					}
-				}
-
-				msg += "\n***Radiant Players :video_game: *** \n"
-				for _, radiantPlayer := range players["radiant"] {
-					pl, err := api.GetPlayerOpenDotaProfile(radiantPlayer.AccountID)
-					if err != nil || pl.Rank == "" {
-						msg += "`" + radiantPlayer.Name + " | Unknown` \n"
-					} else {
-						msg += "`" + radiantPlayer.Name + " | " + pl.Rank + "` \n"
-					}
-				}
-
-				discord.ChannelMessageEdit(channel.ID, message.ID, msg)
 				break
 			case "mh":
 
@@ -341,13 +217,13 @@ func (a *Application) RegisterAndServeBot() {
 					var matchID = command[1]
 
 					if _, err := strconv.ParseInt(matchID,10,64); err != nil {
-						a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
+						_, _ = a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
 							" The match id should be a number " +
 							a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
 
-					s.ChannelTyping(channel.ID)
+					_ = s.ChannelTyping(channel.ID)
 
 					message, _ := a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " Looking for a match ...")
 
@@ -357,132 +233,34 @@ func (a *Application) RegisterAndServeBot() {
 						false,
 						false, a.GetEmoji("peepoblush"), a.Client)
 					if err != nil {
-						a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
+						_, _ = a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() +
 							" " + err.Error() +
 							" " + a.GetEmoji("peepoblush").MessageFormat())
 						return
 					}
 
-					a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " " + msg)
+					_, _ = a.Client.ChannelMessageEdit(channel.ID, message.ID, m.Author.Mention() + " " + msg)
 					return
 
 				} else {
 
-					a.Client.ChannelMessageSend(
+					_, _ = a.Client.ChannelMessageSend(
 						channel.ID,
 						m.Author.Mention() + " No match_id argument found " + a.GetEmoji("peepoblush").MessageFormat() + "\n" +
 							"***Try with an argument like***  `-mh [match_id]`")
-					return
-				}
-			case "rejoin":
-
-				if a.VoiceChannel != nil {
-					a.VoiceChannel.Disconnect()
-					a.VoiceChannel = nil
-				}
-
-				a.JoinChannel(channel, m, g)
-				break
-			case "timer":
-
-				if len(command) > 1 {
-
-					var timeValue time.Duration
-
-					for _, cmd := range command[1:]  {
-						pattern := strings.Split(cmd, ":")
-						if len(pattern) > 0 || len(pattern) < 2 {
-
-							timer := &Timer{
-								ChannelID:    channel.ID,
-								MessageCreate:      m,
-								DoneChannel:  make(chan bool),
-								Client:       a.Client,
-								Hours:        "00",
-								Minutes:      "00",
-								Seconds:      "00",
-							}
-
-							if pattern[0] == "m" {
-								min, _  := strconv.ParseInt(pattern[1], 10, 64)
-								minutes := time.Duration(min)
-								timer.Minutes = pattern[1]
-								timeValue += time.Duration(minutes * time.Minute)
-							}
-
-							if pattern[0] == "s" {
-								sec, _  := strconv.ParseInt(pattern[1], 10, 64)
-								seconds := time.Duration(sec)
-								timer.Seconds = pattern[1]
-								timeValue += time.Duration(seconds * time.Second)
-							}
-
-							if pattern[0] == "h" {
-								hour, _  := strconv.ParseInt(pattern[1], 10, 64)
-								hours := time.Duration(hour)
-								timer.Hours = pattern[1]
-								timeValue += time.Duration(hours * time.Second)
-							}
-
-							timer.Value = timeValue
-
-							a.TimerChannel <- timer
-
-						} else {
-							a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() +
-								" Time should be like the below pattern \n" +
-								"*** Try like this *** `-timer m:5 s:2` " +
-								a.GetEmoji("peepoblush").MessageFormat())
-							return
-						}
-					}
-
-				} else {
-					a.Client.ChannelMessageSend(
-						channel.ID,
-						m.Author.Mention() + " No time pattern found " + a.GetEmoji("peepoblush").MessageFormat() + "\n" +
-							"***Try with an argument like*** `-timer m:5 s:2`")
 					return
 				}
 			case "join":
 
 				if a.VoiceChannel != nil {
 
-					a.Client.ChannelMessageSend(
+					_, _ = a.Client.ChannelMessageSend(
 						channel.ID,
-						m.Author.Mention() + " The session already connected to a voice channel. `Try -rejoin`.")
+						m.Author.Mention() + " The session already connected to a voice channel!")
 					return
 				}
 
 				a.JoinChannel(channel, m, g)
-			case "play":
-
-				if len(command) == 2 {
-
-					if coll := collection.New(a.Runes.Sounds); !coll.Has(command[1]) {
-						a.Client.ChannelMessageSend(
-							channel.ID,
-							m.Author.Mention() + " Could not find sound " + command[1] + " " + a.GetEmoji("peepoblush").MessageFormat())
-						return
-					}
-
-				} else {
-
-					a.Client.ChannelMessageSend(
-						channel.ID,
-						m.Author.Mention() + " No sound argument found " + a.GetEmoji("peepoblush").MessageFormat() + "\n" +
-							"***Try with an argument like***  `-play [sound_name]`")
-					return
-				}
-
-				if !a.PlaySound(a.Runes.GetRandomVoiceFileName()) {
-
-					a.Client.ChannelMessageSend(
-						channel.ID,
-						m.Author.Mention() + " Bot is not connected to a voice channel. \n" +
-							"Try -join to join a voice channel that you're in.")
-				}
-				break
 			}
 		}
 	})
@@ -506,14 +284,14 @@ func (a *Application) JoinChannel(channel *discordgo.Channel, m *discordgo.Messa
 			voicech := disc.Channel{ID: vs.ChannelID, Client: a.Client}
 			_, _, ch, a.VoiceChannel = voicech.Join()
 
-			a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " :white_check_mark: Bot successfully connected to " + ch.Name)
+			_, _ = a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " :white_check_mark: Bot successfully connected to " + ch.Name)
 			return
 		}
 	}
 
 	if a.VoiceChannel == nil {
 
-		a.Client.ChannelMessageSend(
+		_, _ = a.Client.ChannelMessageSend(
 			channel.ID,
 			m.Author.Mention() + " You must be connected to a voice channel! \n" +
 				"Connect to a voice channel and try -join!")
@@ -539,16 +317,16 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 		w.Header().Add("Content-Type", "application/json")
 
 		response := &GSIResponse{}
-		json.NewDecoder(r.Body).Decode(response)
+		_ = json.NewDecoder(r.Body).Decode(response)
 
 		if response.CheckAuthToken(a.GSIAuthToken) {
 			a.GsiChannel <- response
-			json.NewEncoder(w).Encode(map[string] interface{} {
+			_ = json.NewEncoder(w).Encode(map[string] interface{} {
 				"code":     200,
 				"status":   "success",
 			})
 		} else {
-			json.NewEncoder(w).Encode(map[string] interface{} {
+			_ = json.NewEncoder(w).Encode(map[string] interface{} {
 				"code":     0,
 				"status":   "failed",
 			})
@@ -562,7 +340,7 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 	log.Println("Dota 2 GSI Http server running! on :" + a.GSIHttpPort)
 
 	// Listen and serve the gsi application
-	http.ListenAndServe(":" + a.GSIHttpPort, nil)
+	log.Println(http.ListenAndServe(":" + a.GSIHttpPort, nil))
 }
 
 func (a *Application) CreateEmojiIfNotExists(emojiName, filename string) (emoji *discordgo.Emoji, err error) {
