@@ -696,6 +696,16 @@
     "icon": "grimstroke.png"
   },
   {
+    "name": "npc_dota_hero_void_spirit",
+    "id": 126,
+    "localized_name": "Void Spirit"
+  },
+  {
+    "id": 128,
+    "name": "npc_dota_hero_snapfire",
+    "localized_name": "Snapfire"
+  },
+  {
     "id": 129,
     "localized_name": "Mars",
     "name": "npc_dota_hero_mars",
