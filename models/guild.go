@@ -13,6 +13,9 @@ type Guild struct {
 	UserID     string                `bson:"user_id, omitempty" json:"user_id"`
 	Deleted    bool                  `bson:"deleted, omitempty" json:"deleted"`
 
+	MainTextChannelID   string       `bson:"main_text_channel_id, omitempty" json:"main_text_channel_id"`
+	MainVoiceChannelID  string       `bson:"main_voice_channel_id, omitempty" json:"main_voice_channel_id"`
+
 	Token      string                `bson:"token, omitempty" json:"token"`
 
 	CreatedAt  time.Time             `bson:"created_at, omitempty" json:"created_at,omitempty"`

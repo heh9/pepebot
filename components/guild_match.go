@@ -1,16 +1,52 @@
-package main
+package components
 
 import (
 	"encoding/binary"
+	"github.com/MrJoshLab/pepe.bot/models"
+	"github.com/bwmarrin/discordgo"
 	"io"
 	"log"
 	"os"
 )
 
-// loadSound attempts to load an encoded sound file from disk.
-func (a *Application) LoadSound(sound string) (buffer [][]byte, err error) {
+type GuildMatch struct {
+	VoiceConnection   *discordgo.VoiceConnection
+	Guild             *models.Guild
+	DiscordGuild      *discordgo.Guild
+	GameEnded         bool
+	Runes             *Runes
+}
 
-	buffer = make([][]byte, 0)
+func (g *GuildMatch) PlaySound(sound string) bool {
+
+	if g.HasVoiceConnection() {
+
+		buffer, err := g.loadSound(sound)
+
+		if err != nil {
+			return false
+		}
+
+		// Start speaking.
+		_ = g.VoiceConnection.Speaking(true)
+
+		// Send the buffer data.
+		for _, buff := range buffer {
+			g.VoiceConnection.OpusSend <- buff
+		}
+
+		_ = g.VoiceConnection.Speaking(false)
+
+		return true
+	}
+
+	return false
+}
+
+// loadSound attempts to load an encoded sound file from disk.
+func (g *GuildMatch) loadSound(sound string) ([][]byte, error) {
+
+	buffer := make([][]byte, 0)
 
 	file, err := os.Open("./sounds/" + sound + ".dca")
 	if err != nil {
@@ -55,28 +91,6 @@ func (a *Application) LoadSound(sound string) (buffer [][]byte, err error) {
 	return buffer, nil
 }
 
-func (a *Application) PlaySound(sound string) bool {
-
-	//if a.VoiceChannel != nil {
-	//
-	//	buffer, err := a.LoadSound(sound)
-	//
-	//	if err != nil {
-	//		return false
-	//	}
-	//
-	//	// Start speaking.
-	//	_ = a.VoiceChannel.Speaking(true)
-	//
-	//	// Send the buffer data.
-	//	for _, buff := range buffer {
-	//		a.VoiceChannel.OpusSend <- buff
-	//	}
-	//
-	//	_ = a.VoiceChannel.Speaking(false)
-	//
-	//	return true
-	//}
-
-	return false
+func (g *GuildMatch) HasVoiceConnection() bool {
+	return g.VoiceConnection != nil
 }

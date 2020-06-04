@@ -2,12 +2,12 @@
 
 ## Build the docker image
 ```bash
-docker build . --tag=go.pepe.bot
+docker-compose build
 ```
 
 ## Run the docker image
 ```bash
-docker run -dp 9001:9001 --restart=always go.pepe.bot
+docker-compose up -d
 ```
 
 ### Ez :)

@@ -10,20 +10,24 @@ type Channel struct {
 	Client           *discordgo.Session
 }
 
-func (c *Channel) Join() (bool, error, *discordgo.Channel, *discordgo.VoiceConnection) {
+func (c *Channel) Join() (*discordgo.VoiceConnection, error) {
 
-	channel, _ := c.Client.Channel(c.ID)
+	channel, err := c.Client.Channel(c.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Find the guild for that channel.
 	guild, err := c.Client.State.Guild(channel.GuildID)
 	if err != nil {
-		return false, nil, nil, nil
+		return nil, err
 	}
 
-	voiceChannel, err := c.Client.ChannelVoiceJoin(guild.ID, channel.ID, false, true)
+	voiceConnection, err := c.Client.ChannelVoiceJoin(guild.ID, channel.ID, false, true);
 	if err != nil {
 		log.Println(err)
+		return nil, err
 	}
 
-	return true, err, channel, voiceChannel
+	return voiceConnection, nil
 }

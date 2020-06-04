@@ -1,11 +1,11 @@
 package responses
 
 import (
-	"os"
-	"log"
-	"io/ioutil"
 	"encoding/json"
 	"github.com/pkg/errors"
+	"io/ioutil"
+	"log"
+	"os"
 )
 
 type Hero struct {
@@ -28,7 +28,7 @@ func init() {
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(byteValue, &heros)
+	_ = json.Unmarshal(byteValue, &heros)
 }
 
 func GetHeroByID(id int) (Hero, error) {

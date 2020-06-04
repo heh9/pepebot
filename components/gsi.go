@@ -1,4 +1,9 @@
-package main
+package components
+
+import (
+	"github.com/MrJoshLab/pepe.bot/models"
+	"github.com/bwmarrin/discordgo"
+)
 
 const (
 	PreGame               = "DOTA_GAMERULES_STATE_PRE_GAME"
@@ -13,7 +18,9 @@ const (
 type GSIResponse struct {
 
 	Auth                           map[string] string      `json:"auth"`
-	GuildID                        string
+
+	DiscordGuild                   *discordgo.Guild
+	Guild                          *models.Guild
 
 	Buildings struct {
 		Radiant                    map[string] interface{} `json:"radiant"`

@@ -10,9 +10,9 @@ import (
 	"github.com/MrJoshLab/pepe.bot/disc"
 	"github.com/MrJoshLab/pepe.bot/models"
 	"github.com/bwmarrin/discordgo"
+	cmap "github.com/orcaman/concurrent-map"
 	"github.com/polds/imgbase64"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"strconv"
@@ -26,134 +26,151 @@ type GameEndChannel struct {
 	GuildId    string
 }
 
-type GuildMatch struct {
-	VoiceConnection *discordgo.VoiceConnection
-	Guild           *discordgo.Guild
-	GameEnded       bool
-	Runes           *Runes
-}
-
 type Application struct {
 
 	// Discord client
 	Client               *discordgo.Session
 
 	// gsi chan
-	GsiChannel           chan *GSIResponse
+	GsiChannel           chan *components.GSIResponse
 
 	// game ended chan
 	GameEndChannel       chan *GameEndChannel
 
 	// discord target voice channel
-	GuildLiveMatches     map[string] *GuildMatch
+	GuildLiveMatches     cmap.ConcurrentMap
 
 	DiscordAuthToken,
 	GSIHttpPort          string
+
 }
 
-func (a *Application) CheckRunes()  {
+func (a *Application) GetGuildMatch(guildID string) (*components.GuildMatch, bool) {
+	guildMatch, ok := a.GuildLiveMatches.Get(guildID)
+	if ok {
+		return guildMatch.(*components.GuildMatch), ok
+	}
+	return nil, false
+}
 
-	for data := range a.GsiChannel {
+func (a *Application) CheckRunes() {
 
-		gm := a.GuildLiveMatches[data.GuildID]
+	for {
+		select {
+		case gameMatch := <-a.GsiChannel:
 
-		switch data.Map.GameState {
-		case PreGame:
+			switch gameMatch.Map.GameState {
 
-			if gm == nil {
+			case components.PreGame:
 
-				guild, err := a.Client.Guild(data.GuildID)
-				if err == nil {
-
-					channel := disc.Channel{ ID: "", Client: a.Client }
-					_, _, _, voiceConnection := channel.Join()
-
-					a.GuildLiveMatches[data.GuildID] = &GuildMatch{
-						Runes: NewRunes(),
-						Guild: guild,
-						VoiceConnection: voiceConnection,
-					}
-
-				}
-
-			}
-
-			break
-		case StrategyTime: break
-		case HeroSelection: break
-		case WaitForMapToLoad: break
-		case WaitForPlayersToLoad: break
-		case InProgress:
-
-			if gm != nil {
-				if gm.GameEnded {
-					gm.GameEnded = false
-				}
-				gm.Runes.ClockTime = strconv.Itoa(data.Map.ClockTime)
-				if ok, clock := gm.Runes.Up(); ok {
-					if coll := collection.New(gm.Runes.RuneTimes); !coll.Has(clock) {
-						gm.Runes.RuneTimes = append(gm.Runes.RuneTimes, clock)
-
-						// This should call from guild
-						a.PlaySound(gm.Runes.GetRandomVoiceFileName())
-					}
-				}
-			}
-
-			break
-		case PostGame:
-
-			if gm != nil {
-				if !gm.GameEnded {
-					if data.Map.WinTeam != "none" && data.Map.WinTeam != "" {
-
-						endStruct := &GameEndChannel{
-							MatchId: data.Map.Matchid,
-							Won:     false,
+				if len(gameMatch.DiscordGuild.VoiceStates) == 0 {
+					// connect to main voice channel of the guild
+					if gameMatch.Guild.MainVoiceChannelID != "" {
+						vChannel := &disc.Channel{
+							ID: gameMatch.Guild.MainVoiceChannelID,
+							Client: a.Client,
+						}
+						voiceConnection, err := vChannel.Join()
+						if err != nil {
+							log.Println(err)
+							continue
 						}
 
-						if data.Player.TeamName != data.Map.WinTeam {
-							a.PlaySound("loss")
-						} else {
-							endStruct.Won = true
-							a.PlaySound(a.getRandomWinSound())
-						}
-
-						gm.Runes.RuneTimes = []string {}
-						gm.Runes.ClockTime = ""
-						gm.GameEnded = true
-						a.GameEndChannel <- endStruct
+						a.GuildLiveMatches.Set(gameMatch.DiscordGuild.ID, &components.GuildMatch{
+							VoiceConnection: voiceConnection,
+							Guild:           gameMatch.Guild,
+							DiscordGuild:    gameMatch.DiscordGuild,
+							Runes:           components.NewRunes(),
+						})
 					}
 				}
-			}
 
-			break
+				break
+
+			case components.StrategyTime: break
+			case components.HeroSelection: break
+			case components.WaitForMapToLoad: break
+			case components.WaitForPlayersToLoad: break
+			case components.InProgress:
+
+				gm, ok := a.GetGuildMatch(gameMatch.DiscordGuild.ID)
+				if ok {
+
+					if gm.GameEnded {
+						gm.GameEnded = false
+					}
+
+					gm.Runes.ClockTime = strconv.Itoa(gameMatch.Map.ClockTime)
+					if ok, clock := gm.Runes.Up(); ok {
+						if coll := collection.New(gm.Runes.RuneTimes); !coll.Has(clock) {
+							gm.Runes.RuneTimes = append(gm.Runes.RuneTimes, clock)
+							gm.PlaySound(gm.Runes.GetRandomVoiceFileName())
+						}
+					}
+
+				}
+
+				break
+			case components.PostGame:
+
+				gm, ok := a.GetGuildMatch(gameMatch.DiscordGuild.ID)
+				if ok {
+
+					if !gm.GameEnded {
+						if gameMatch.Map.WinTeam != "none" && gameMatch.Map.WinTeam != "" {
+
+							endStruct := &GameEndChannel{
+								MatchId: gameMatch.Map.Matchid,
+								Won:     false,
+							}
+
+							if gameMatch.Player.TeamName != gameMatch.Map.WinTeam {
+								gm.PlaySound("loss")
+							} else {
+								endStruct.Won = true
+								gm.PlaySound(a.getRandomWinSound())
+							}
+
+							gm.Runes.RuneTimes = []string {}
+							gm.Runes.ClockTime = ""
+							gm.GameEnded = true
+							a.GameEndChannel <- endStruct
+						}
+					}
+
+				}
+
+				break
+			}
 		}
 	}
 
 }
 
 func (a *Application) getRandomWinSound() string {
-	return []string{"win", "gta"}[RNG(0, 1)]
+	return []string{"win", "gta"}[components.RNG(0, 1)]
 }
 
 func (a *Application) CheckGameEndStatus() {
+	for {
+		select {
+		case gameMatch := <- a.GameEndChannel:
 
-	for game := range a.GameEndChannel {
+			gm, ok := a.GetGuildMatch(gameMatch.GuildId)
+			if ok {
 
-		gm := a.GuildLiveMatches[game.GuildId]
+				if gm.HasVoiceConnection() {
+					_ = gm.VoiceConnection.Disconnect()
+					gm.VoiceConnection = nil
+				}
 
-		if gm.VoiceConnection != nil {
-			_ = gm.VoiceConnection.Disconnect()
-			gm.VoiceConnection = nil
+				msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client, gm.DiscordGuild)
+				_, _ = a.Client.ChannelMessageSend(gm.Guild.MainTextChannelID, msg)
+
+			}
+
 		}
-
-		msg, _ := api.GetMatchHistory(game.MatchId, true, game.Won,
-			true, a.Client, gm.Guild)
-
-		_, _ = a.Client.ChannelMessageSend("MainTextChannelId", msg)
 	}
-
 }
 
 func (a *Application) RegisterAndServeBot() {
@@ -196,6 +213,8 @@ func (a *Application) RegisterAndServeBot() {
 				"discord_id": event.ID,
 				"user_id": event.OwnerID,
 				"deleted": false,
+				"main_voice_channel_id": nil,
+				"main_text_channel_id": event.SystemChannelID,
 				"token": components.Random(25),
 				"created_at": time.Now(),
 				"deleted_at": time.Now(),
@@ -410,32 +429,6 @@ func (a *Application) RegisterAndServeBot() {
 	log.Println("Pepe.bot is now running!")
 }
 
-func (a *Application) JoinChannel(channel *discordgo.Channel, m *discordgo.MessageCreate, g *discordgo.Guild)  {
-
-	//for _, vs := range g.VoiceStates {
-	//
-	//	if vs.UserID == m.Author.ID {
-	//
-	//		var ch *discordgo.Channel
-	//
-	//		voicech := disc.Channel{ID: vs.ChannelID, Client: a.Client}
-	//		_, _, ch, a.VoiceChannel = voicech.Join()
-	//
-	//		_, _ = a.Client.ChannelMessageSend(channel.ID, m.Author.Mention() + " :white_check_mark: Bot successfully connected to " + ch.Name)
-	//		return
-	//	}
-	//}
-	//
-	//if a.VoiceChannel == nil {
-	//
-	//	_, _ = a.Client.ChannelMessageSend(
-	//		channel.ID,
-	//		m.Author.Mention() + " You must be connected to a voice channel! \n" +
-	//			"Connect to a voice channel and try -join!")
-	//	return
-	//}
-}
-
 func (a *Application) ListenAndServeGSIHttpServer()  {
 
 	http.HandleFunc("/", func (w http.ResponseWriter, r *http.Request) {
@@ -443,11 +436,10 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 		w.Header().Add("Content-Type", "application/json")
 
 		var (
-			response = new(GSIResponse)
+			response = new(components.GSIResponse)
 			_ = json.NewDecoder(r.Body).Decode(response)
-
 			guild = new(models.Guild)
-			collection = db.Connection.Collection("guilds")
+			coll = db.Connection.Collection("guilds")
 			authToken = response.GetAuthToken()
 		)
 
@@ -459,12 +451,11 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 			return
 		}
 
-		result := collection.FindOne(context.Background(), bson.M{
-			"token": response.GetAuthToken(),
-		})
+		mCtx, _ := context.WithTimeout(r.Context(), 10 * time.Second)
 
-		switch result.Err() {
-		case mongo.ErrNoDocuments:
+		result := coll.FindOne(mCtx, bson.M{ "token": response.GetAuthToken() })
+
+		if err := result.Err(); err != nil {
 			_ = json.NewEncoder(w).Encode(map[string] interface{} {
 				"code":     0,
 				"status":   "failed",
@@ -473,12 +464,26 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 		}
 
 		if err := result.Decode(guild); err != nil {
+			log.Println(err)
 			_ = json.NewEncoder(w).Encode(map[string] interface{} {
 				"code":     0,
 				"status":   "failed",
 			})
 			return
 		}
+
+		discordGuild, err := a.Client.Guild(guild.DiscordID)
+		if err != nil {
+			log.Println(err)
+			_ = json.NewEncoder(w).Encode(map[string] interface{} {
+				"code":     0,
+				"status":   "failed",
+			})
+			return
+		}
+
+		response.DiscordGuild = discordGuild
+		response.Guild = guild
 
 		a.GsiChannel <- response
 		_ = json.NewEncoder(w).Encode(map[string] interface{} {

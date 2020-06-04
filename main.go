@@ -1,7 +1,9 @@
 package main
 
 import (
+	"github.com/MrJoshLab/pepe.bot/components"
 	_ "github.com/joho/godotenv/autoload"
+	cmap "github.com/orcaman/concurrent-map"
 	"log"
 	"os"
 )
@@ -16,6 +18,8 @@ func main() {
 	application := &Application{
 		DiscordAuthToken:      os.Getenv("DISCORD_API_TOKEN"),
 		GSIHttpPort:           os.Getenv("DOTA2_GSI_HTTP_PORT"),
+		GsiChannel:            make(chan *components.GSIResponse),
+		GuildLiveMatches:      cmap.New(),
 	}
 
 	// register the discord bot and run
@@ -25,10 +29,10 @@ func main() {
 	defer application.Client.Close()
 
 	// Check clock time for runes
-	//go application.CheckRunes()
+	go application.CheckRunes()
 
 	// check game end status for stopping the bot
-	//go application.CheckGameEndStatus()
+	go application.CheckGameEndStatus()
 
 	// Listen and serve gsi http server
 	application.ListenAndServeGSIHttpServer()

@@ -8,18 +8,14 @@ import (
 
 type User struct {
 	ID                  *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
-
 	Fullname            string                `json:"fullname"  form:"fullname"  validate:"required"`
 	Username            string                `json:"username"  form:"username"  validate:"required,unique=users"`
 	Email               string                `json:"email"     form:"email"     validate:"required,email,unique=users"`
 	Password            string                `json:"-"         form:"password"  validate:"required"`
 	Avatar              string                `json:"avatar"`
 	IsActive            bool                  `json:"is_active"`
-
 	Token               string                `json:"token"`
-
-	RoleId              uint                  `json:"role_id"`
-
+	RoleId              *primitive.ObjectID   `json:"role_id"`
 	LastLogin           time.Time             `json:"last_login"`
 	JoinedAt            time.Time             `json:"joined_at"`
 	UpdatedAt           time.Time             `json:"updated_at"`
