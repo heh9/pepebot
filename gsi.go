@@ -13,6 +13,7 @@ const (
 type GSIResponse struct {
 
 	Auth                           map[string] string      `json:"auth"`
+	GuildID                        string
 
 	Buildings struct {
 		Radiant                    map[string] interface{} `json:"radiant"`
@@ -100,10 +101,6 @@ type GSIResponse struct {
 	}
 }
 
-func (r *GSIResponse) getAuthToken() string {
+func (r *GSIResponse) GetAuthToken() string {
 	return r.Auth["token"]
-}
-
-func (r *GSIResponse) CheckAuthToken(token string) bool {
-	return r.getAuthToken() == token
 }

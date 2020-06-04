@@ -1,26 +1,21 @@
-FROM golang:1.12
+FROM golang:1.14
 
 # Update and install curl
 RUN apt-get update
 
 # Creating work directory
-RUN mkdir $GOPATH/src/pepe.bot
+RUN mkdir /code
 
 # Adding project to work directory
-ADD . $GOPATH/src/pepe.bot
+ADD . /code
 
 # Choosing work directory
-WORKDIR $GOPATH/src/pepe.bot
-
-RUN git clone https://go.googlesource.com/crypto $GOPATH/src/golang.org/x/crypto
-
-# Install project dependencies
-RUN go get -t
-
-# Expose port
-EXPOSE 9001
+WORKDIR /code
 
 # build project
 RUN go build -o pepe_bot .
+
+# Expose port
+EXPOSE 9001
 
 CMD ["./pepe_bot"]

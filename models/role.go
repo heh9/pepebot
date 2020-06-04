@@ -1,0 +1,27 @@
+package models
+
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+)
+
+type Role struct {
+	ID            *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
+	Title         string                `bson:"title, omitempty" json:"title"`
+	CreatedAt     time.Time             `bson:"created_at, omitempty" json:"-"`
+	UpdatedAt     time.Time             `bson:"updated_at, omitempty" json:"-"`
+}
+
+func (r *Role) IsAdmin() bool {
+	if r.Title == "admin" {
+		return true
+	}
+	return false
+}
+
+func (r *Role) IsUser() bool {
+	if r.Title == "user" {
+		return true
+	}
+	return false
+}

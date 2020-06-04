@@ -57,26 +57,26 @@ func (a *Application) LoadSound(sound string) (buffer [][]byte, err error) {
 
 func (a *Application) PlaySound(sound string) bool {
 
-	if a.VoiceChannel != nil {
-
-		buffer, err := a.LoadSound(sound)
-
-		if err != nil {
-			return false
-		}
-
-		// Start speaking.
-		_ = a.VoiceChannel.Speaking(true)
-
-		// Send the buffer data.
-		for _, buff := range buffer {
-			a.VoiceChannel.OpusSend <- buff
-		}
-
-		_ = a.VoiceChannel.Speaking(false)
-
-		return true
-	}
+	//if a.VoiceChannel != nil {
+	//
+	//	buffer, err := a.LoadSound(sound)
+	//
+	//	if err != nil {
+	//		return false
+	//	}
+	//
+	//	// Start speaking.
+	//	_ = a.VoiceChannel.Speaking(true)
+	//
+	//	// Send the buffer data.
+	//	for _, buff := range buffer {
+	//		a.VoiceChannel.OpusSend <- buff
+	//	}
+	//
+	//	_ = a.VoiceChannel.Speaking(false)
+	//
+	//	return true
+	//}
 
 	return false
 }

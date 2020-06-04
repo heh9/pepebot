@@ -1,11 +1,12 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
+	"github.com/MrJoshLab/pepe.bot/db"
+	"github.com/MrJoshLab/pepe.bot/models"
 	"github.com/bwmarrin/discordgo"
-	"github.com/pkg/errors"
-	"io/ioutil"
-	"os"
+	"go.mongodb.org/mongo-driver/bson"
+	"strconv"
 )
 
 type SteamPlayer struct {
@@ -15,14 +16,14 @@ type SteamPlayer struct {
 	DiscordID  string   `json:"discord_id"`
 }
 
-func GetDiscordUserBySteamAccountID(discord *discordgo.Session, accountID int64) (*discordgo.User, error) {
+func GetDiscordUserBySteamAccountID(d *discordgo.Session, g *discordgo.Guild, accountID int64) (*discordgo.User, error) {
 
-	player , err := GetPlayerByAccountID(accountID)
+	player , err := GetPlayerByAccountID(g, accountID)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := discord.User(player.DiscordID)
+	user, err := d.User(player.UserDiscordID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,28 +31,24 @@ func GetDiscordUserBySteamAccountID(discord *discordgo.Session, accountID int64)
 	return user, nil
 }
 
-func GetPlayerByAccountID(accountID int64) (*SteamPlayer, error)  {
+func GetPlayerByAccountID(guild *discordgo.Guild, accountID int64) (*models.Player, error)  {
 
-	jsonFile, err := os.Open("players.json")
-	if err != nil {
+	var (
+		player     = new(models.Player)
+		collection = db.Connection.Collection("players")
+		result     = collection.FindOne(context.Background(), bson.M{
+			"account_id": strconv.Itoa(int(accountID)),
+			"guild_id": guild.ID,
+		})
+	)
+
+	if err := result.Err(); err != nil {
 		return nil, err
 	}
 
-	byteValue, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
+	if err := result.Decode(player); err != nil {
 		return nil, err
 	}
 
-	var players []*SteamPlayer
-	if err := json.Unmarshal(byteValue, &players); err != nil {
-		return nil, nil
-	}
-
-	for _, player := range players {
-		if player.AccountID == accountID {
-			return player, nil
-		}
-	}
-
-	return nil, errors.New("Could not found you in database")
+	return player, nil
 }

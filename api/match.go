@@ -11,19 +11,13 @@ import (
 	"time"
 )
 
-func GetMatchHistory(
-	matchID string,
-	showGameStatus bool,
-	won bool,
-	showRandomJokeCommentForStatus bool,
-	emoji *discordgo.Emoji,
-	discord *discordgo.Session) (string, error) {
+func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session, g *discordgo.Guild) (string, error) {
 
 	message := ""
 
 	client := dota2.NewClient(os.Getenv("STEAM_WEBAPI_API_KEY"))
 
-	match, err := client.Match(matchID)
+	match, err := client.Match(mid)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -47,21 +41,21 @@ func GetMatchHistory(
 		clock = fmt.Sprintf("%d:%d", mins, secs)
 	}
 
-	if showGameStatus {
+	if sgs {
 		statusText := "loss"
-		if won {
+		if w {
 			statusText = "win"
 		}
-		message += fmt.Sprintf("**Game ended with duration __%s__ as %s and match id** `[%s]`", clock, statusText, matchID)
+		message += fmt.Sprintf("**Game ended with duration __%s__ as %s and match id** `[%s]`", clock, statusText, mid)
 	} else {
-		message += fmt.Sprintf("**Game ended with duration __%s__ and match id** `[%s]`", clock, matchID)
+		message += fmt.Sprintf("**Game ended with duration __%s__ and match id** `[%s]`", clock, mid)
 	}
 
 	message += fmt.Sprintln() + fmt.Sprintln()
 
 	if damage, hero, player := match.GetMostHeroDamage(); damage != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s` %s", damage, hero.LocalizedName, u.Mention())
 		} else {
@@ -75,7 +69,7 @@ func GetMatchHistory(
 
 	if kills, hero, player := match.GetMostHeroKills(); kills != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Kills                          **(%d)** `%s` %s", kills, hero.LocalizedName, u.Mention())
 		} else {
@@ -88,7 +82,7 @@ func GetMatchHistory(
 
 	if lastHits, hero, player := match.GetMostHeroLastHits(); lastHits != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
 		} else {
@@ -102,7 +96,7 @@ func GetMatchHistory(
 
 	if healing, hero, player := match.GetMostHeroHealing(); healing != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s` %s", healing, hero.LocalizedName, u.Mention())
 		} else {
@@ -115,7 +109,7 @@ func GetMatchHistory(
 
 	if denies, hero, player := match.GetMostHeroDenies(); denies != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Denies                    **(%d)** `%s` %s", denies, hero.LocalizedName, u.Mention())
 		} else {
@@ -128,7 +122,7 @@ func GetMatchHistory(
 
 	if towerDamage, hero, player := match.GetMostHeroTowerDamage(); towerDamage != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(discord, player.AccountID); err == nil {
+		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
 			message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s` %s", towerDamage, hero.LocalizedName, u.Mention())
 		} else {
@@ -137,17 +131,13 @@ func GetMatchHistory(
 		}
 	}
 
-	if showRandomJokeCommentForStatus {
+	if rJ {
 
 		message += fmt.Sprintln() + fmt.Sprintln()
 
 		comment := "Try a bit harder next time"
-		if won {
+		if w {
 			comment = "Youuuuuu areeeee the championssssssss my friendsss"
-		}
-
-		if emoji != nil {
-			comment += " " + emoji.MessageFormat()
 		}
 
 		message += fmt.Sprint(comment)
