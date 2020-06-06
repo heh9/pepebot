@@ -14,6 +14,7 @@ import (
 	"github.com/polds/imgbase64"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,6 +54,61 @@ func (a *Application) GetGuildMatch(guildID string) (*components.GuildMatch, boo
 	return nil, false
 }
 
+func (a *Application) ConnectToAuthorVoiceChannel(dg *models.Guild, msg *discordgo.MessageCreate) error {
+	_, ok := a.GetGuildMatch(msg.GuildID)
+	if !ok {
+
+		guild, _ := a.Client.Guild(msg.GuildID)
+		for _, vs := range guild.VoiceStates {
+			if vs.UserID == msg.Author.ID {
+
+				vChannel := &disc.Channel{
+					ID: vs.ChannelID,
+					Client: a.Client,
+				}
+				voiceConnection, err := vChannel.Join()
+				if err != nil {
+					return err
+				}
+
+				a.GuildLiveMatches.Set(msg.GuildID, &components.GuildMatch{
+					VoiceConnection: voiceConnection,
+					Guild:           dg,
+					DiscordGuild:    guild,
+					Runes:           components.NewRunes(),
+				})
+
+			}
+		}
+	}
+	return nil
+}
+
+func (a *Application) ConnectToVoiceChannelIfNotConnected(gameMatch *components.GSIResponse) error {
+	_, ok := a.GetGuildMatch(gameMatch.DiscordGuild.ID)
+	if !ok {
+		// connect to main voice channel of the guild
+		if gameMatch.Guild.MainVoiceChannelID != "" {
+			vChannel := &disc.Channel{
+				ID: gameMatch.Guild.MainVoiceChannelID,
+				Client: a.Client,
+			}
+			voiceConnection, err := vChannel.Join()
+			if err != nil {
+				return err
+			}
+
+			a.GuildLiveMatches.Set(gameMatch.DiscordGuild.ID, &components.GuildMatch{
+				VoiceConnection: voiceConnection,
+				Guild:           gameMatch.Guild,
+				DiscordGuild:    gameMatch.DiscordGuild,
+				Runes:           components.NewRunes(),
+			})
+		}
+	}
+	return nil
+}
+
 func (a *Application) CheckRunes() {
 
 	for {
@@ -62,29 +118,10 @@ func (a *Application) CheckRunes() {
 			switch gameMatch.Map.GameState {
 
 			case components.PreGame:
-
-				if len(gameMatch.DiscordGuild.VoiceStates) == 0 {
-					// connect to main voice channel of the guild
-					if gameMatch.Guild.MainVoiceChannelID != "" {
-						vChannel := &disc.Channel{
-							ID: gameMatch.Guild.MainVoiceChannelID,
-							Client: a.Client,
-						}
-						voiceConnection, err := vChannel.Join()
-						if err != nil {
-							log.Println(err)
-							continue
-						}
-
-						a.GuildLiveMatches.Set(gameMatch.DiscordGuild.ID, &components.GuildMatch{
-							VoiceConnection: voiceConnection,
-							Guild:           gameMatch.Guild,
-							DiscordGuild:    gameMatch.DiscordGuild,
-							Runes:           components.NewRunes(),
-						})
-					}
+				if err := a.ConnectToVoiceChannelIfNotConnected(gameMatch); err != nil {
+					log.Println(err)
+					continue
 				}
-
 				break
 
 			case components.StrategyTime: break
@@ -122,6 +159,7 @@ func (a *Application) CheckRunes() {
 							endStruct := &GameEndChannel{
 								MatchId: gameMatch.Map.Matchid,
 								Won:     false,
+								GuildId: gameMatch.DiscordGuild.ID,
 							}
 
 							if gameMatch.Player.TeamName != gameMatch.Map.WinTeam {
@@ -148,7 +186,9 @@ func (a *Application) CheckRunes() {
 }
 
 func (a *Application) getRandomWinSound() string {
-	return []string{"win", "gta"}[components.RNG(0, 1)]
+	source := rand.NewSource(time.Now().Unix())
+	random := rand.New(source)
+	return []string{"gta", "win"}[random.Intn(2)]
 }
 
 func (a *Application) CheckGameEndStatus() {
@@ -161,11 +201,12 @@ func (a *Application) CheckGameEndStatus() {
 
 				if gm.HasVoiceConnection() {
 					_ = gm.VoiceConnection.Disconnect()
-					gm.VoiceConnection = nil
 				}
 
 				msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client, gm.DiscordGuild)
 				_, _ = a.Client.ChannelMessageSend(gm.Guild.MainTextChannelID, msg)
+
+				a.GuildLiveMatches.Remove(gm.DiscordGuild.ID)
 
 			}
 
@@ -183,7 +224,7 @@ func (a *Application) RegisterAndServeBot() {
 	a.Client = discord
 
 	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Disconnect) {
-		log.Println("disconnected from discord!")
+		log.Println("Disconnected from discord!")
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Ready) {
@@ -191,6 +232,7 @@ func (a *Application) RegisterAndServeBot() {
 	})
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.Connect) {
+		log.Println("Connected to discord!")
 		_ = s.UpdateStatusComplex(discordgo.UpdateStatusData{
 			Game: &discordgo.Game{
 				Name: "Dota 2",
@@ -201,11 +243,12 @@ func (a *Application) RegisterAndServeBot() {
 
 	a.Client.AddHandler(func (s *discordgo.Session, event *discordgo.GuildCreate) {
 
-		guildModel := new(models.Guild)
-		coll := db.Connection.Collection("guilds")
-		mCtx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
-
-		result := coll.FindOne(mCtx, bson.M{ "discord_id": event.ID })
+		var (
+			guildModel = new(models.Guild)
+			coll       = db.Connection.Collection("guilds")
+			mCtx, _    = context.WithTimeout(context.Background(), 10 * time.Second)
+			result     = coll.FindOne(mCtx, bson.M{ "discord_id": event.ID })
+		)
 
 		if err := result.Decode(guildModel); err != nil {
 			guild := bson.M{
@@ -247,6 +290,17 @@ func (a *Application) RegisterAndServeBot() {
 				return
 			}
 
+			dbGuild := new(models.Guild)
+			result  := db.Connection.Collection("guilds").FindOne(mCtx, bson.M{
+				"discord_id": m.GuildID,
+				"user_id": m.Author.ID,
+			})
+
+			if err := result.Decode(dbGuild); err != nil {
+				// Could not find guild from database.
+				return
+			}
+
 			prefixCommand := strings.Split(strings.TrimSpace(m.Content), "-")
 
 			command := strings.Split(prefixCommand[1], " ")
@@ -254,24 +308,181 @@ func (a *Application) RegisterAndServeBot() {
 			switch command[0] {
 			case "help":
 
+				helpText := "\n"
+
+				if dbGuild.MainTextChannelID == "" {
+					helpText += "Set MainTextChannel with `-main_text_channel {channel_id}`"
+				} else {
+					mainTextChannel, err := a.Client.Channel(dbGuild.MainTextChannelID)
+					if err == nil {
+						helpText +=
+							"MainTextChannel is " + mainTextChannel.Mention() + " \n" +
+								"If you want to change this you can use: `-main_text_channel {channel_id}`\n\n"
+					} else {
+						helpText += "Set MainTextChannel with `-main_text_channel {channel_id}`"
+					}
+				}
+
+				if dbGuild.MainVoiceChannelID == "" {
+					helpText += "Set MainVoiceChannel with `-main_voice_channel {voice_channel_id}`\n"
+				} else {
+					mainVoiceChannel, err := a.Client.Channel(dbGuild.MainVoiceChannelID)
+					if err == nil {
+						helpText +=
+							"MainVoiceChannel is " + mainVoiceChannel.Mention() + " \n" +
+								"If you want to change this you can use: `-main_voice_channel {channel_id}`\n\n"
+					} else {
+						helpText += "Set MainVoiceChannel with `-main_voice_channel {channel_id}`\n"
+					}
+				}
+
+				helpText +=
+
+					"Connect a dota2 player `-pa @mention_user [dota2_friend_id]`\n" +
+					"Disconnect a dota2 player  `-pr @mention_user`\n" +
+					"Get a summary of a dota2 match `-mh [match_id]`\n" +
+					"Join voice channel that youre in `-join`\n" +
+					"Disconnect from voice channel that bot connected to `-dc`\n\n " +
+
+					"** If you having some issues with disconnecting the bot manually\n" +
+					"  you should use `-dc` command to disconnect it! ** \n\n"+
+
+					"This bot is a runes reminder bot for dota 2 games that works with" +
+						" Dota 2 GSI API.\n" +
+						"You can get install instruction with command: `-instruction` \n" +
+						"Isn't that cool ? "
+
+				_, _ = a.Client.ChannelMessageSend(channel.ID, helpText)
+				break
+
+			case "about":
 				_, _ = a.Client.ChannelMessageSend(channel.ID,
 					m.Author.Mention() + " This bot is a runes reminder bot for dota 2 games that works with" +
-					" Dota 2 GSI API. \n" +
-					"Isn't that cool ? ")
+						" Dota 2 GSI API. \n" +
+						"Isn't that cool ? ")
+				break
+
+			case "disconnect", "dc", "leave":
+				gm, ok := a.GetGuildMatch(dbGuild.DiscordID)
+				if ok {
+					if gm.HasVoiceConnection() {
+						_ = gm.VoiceConnection.Disconnect()
+						a.GuildLiveMatches.Remove(gm.DiscordGuild.ID)
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Bot disconnected from voice channel!")
+					}
+				}
+				break
+
+			case "main_text_channel":
+
+				if len(command) == 2 {
+
+					if m.Author.ID != dbGuild.UserID {
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Only the owner of the server can change main_text_channel!")
+						return
+					}
+
+					mainTextChannel, err := a.Client.Channel(command[1])
+					if err != nil {
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Could not find any channels with id: `" + command[1] + "`!")
+						return
+					}
+
+					guildsCollection := db.Connection.Collection("guilds")
+
+					_, err = guildsCollection.UpdateOne(mCtx, bson.M{"discord_id": dbGuild.DiscordID}, bson.M{
+						"$set": bson.M{
+							"main_text_channel_id": mainTextChannel.ID,
+						},
+					})
+
+					if err != nil {
+						log.Println(err)
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Could not change MainTextChannel, Please try again later!")
+						return
+					}
+
+					_, _ = a.Client.ChannelMessageSend(channel.ID,
+						m.Author.Mention() + " MainTextChannel changed to " + mainTextChannel.Mention() + " successfully!")
+					return
+				}
+
+				mainTextChannel, err := a.Client.Channel(dbGuild.MainTextChannelID)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				_, _ = a.Client.ChannelMessageSend(channel.ID,
+					m.Author.Mention() + " The main text channel for matches is " + mainTextChannel.Mention() + " \n" +
+					"If you want to change it, you can use `-main_text_channel {channel_id}`")
+
+				break
+
+			case "main_voice_channel":
+
+				if len(command) == 2 {
+
+					if m.Author.ID != dbGuild.UserID {
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Only the owner of the server can change main_voice_channel!")
+						return
+					}
+
+					mainTextChannel, err := a.Client.Channel(command[1])
+					if err != nil {
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Could not find any voice channels with id: `" + command[1] + "`!")
+						return
+					}
+
+					guildsCollection := db.Connection.Collection("guilds")
+
+					_, err = guildsCollection.UpdateOne(mCtx, bson.M{"discord_id": dbGuild.DiscordID}, bson.M{
+						"$set": bson.M{
+							"main_voice_channel_id": mainTextChannel.ID,
+						},
+					})
+
+					if err != nil {
+						log.Println(err)
+						_, _ = a.Client.ChannelMessageSend(channel.ID,
+							m.Author.Mention() + " Could not change MainVoiceChannel, Please try again later!")
+						return
+					}
+
+					_, _ = a.Client.ChannelMessageSend(channel.ID,
+						m.Author.Mention() + " MainVoiceChannel changed to " + mainTextChannel.Name + " successfully!")
+					return
+				}
+
+				mainVoiceChannel, err := a.Client.Channel(dbGuild.MainVoiceChannelID)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				_, _ = a.Client.ChannelMessageSend(channel.ID,
+					m.Author.Mention() + " The main voice channel for matches is " + mainVoiceChannel.Mention() + " \n" +
+						"If you want to change it, you can use `-main_voice_channel {voice_channel_id}`")
+
+				break
+
+			case "join":
+				if err := a.ConnectToAuthorVoiceChannel(dbGuild, m); err != nil {
+					log.Println(err)
+				}
 				break
 
 			case "pr":
 
-				guildModel := new(models.Guild)
-				coll := db.Connection.Collection("guilds")
 				playersCollection := db.Connection.Collection("players")
 
-				result := coll.FindOne(mCtx, bson.M{
-					"discord_id": m.GuildID,
-					"user_id": m.Author.ID,
-				})
-
-				if err := result.Decode(guildModel); err != nil {
+				if dbGuild.UserID != m.Author.ID {
 					_, _ = a.Client.ChannelMessageSend(channel.ID,
 						m.Author.Mention() + " Only the owner of the guild can add/remove/update a player!")
 					return
@@ -322,16 +533,9 @@ func (a *Application) RegisterAndServeBot() {
 
 			case "pa":
 
-				guildModel := new(models.Guild)
-				coll := db.Connection.Collection("guilds")
 				playersCollection := db.Connection.Collection("players")
 
-				result := coll.FindOne(mCtx, bson.M{
-					"discord_id": m.GuildID,
-					"user_id": m.Author.ID,
-				})
-
-				if err := result.Decode(guildModel); err != nil {
+				if dbGuild.UserID != m.Author.ID {
 					_, _ = a.Client.ChannelMessageSend(channel.ID,
 						m.Author.Mention() + " Only the owner of the guild can add/remove/update a player!")
 					return
@@ -442,6 +646,14 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 			coll = db.Connection.Collection("guilds")
 			authToken = response.GetAuthToken()
 		)
+
+		if response.Provider.Appid != 570 {
+			_ = json.NewEncoder(w).Encode(map[string] interface{} {
+				"code":     0,
+				"status":   "failed",
+			})
+			return
+		}
 
 		if authToken == "" {
 			_ = json.NewEncoder(w).Encode(map[string] interface{} {

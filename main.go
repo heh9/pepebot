@@ -19,6 +19,7 @@ func main() {
 		DiscordAuthToken:      os.Getenv("DISCORD_API_TOKEN"),
 		GSIHttpPort:           os.Getenv("DOTA2_GSI_HTTP_PORT"),
 		GsiChannel:            make(chan *components.GSIResponse),
+		GameEndChannel:        make(chan *GameEndChannel),
 		GuildLiveMatches:      cmap.New(),
 	}
 

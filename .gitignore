@@ -5,3 +5,4 @@ convert_to_dca.sh
 sounds/mp3
 db/data/*
 !db/data/.keep
+struct.json

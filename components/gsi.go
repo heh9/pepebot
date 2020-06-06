@@ -22,11 +22,6 @@ type GSIResponse struct {
 	DiscordGuild                   *discordgo.Guild
 	Guild                          *models.Guild
 
-	Buildings struct {
-		Radiant                    map[string] interface{} `json:"radiant"`
-		Dire                       map[string] interface{} `json:"dire"`
-	}
-
 	Provider struct {
 		Name                       string `json:"name"`
 		Appid                      int    `json:"appid"`
@@ -72,40 +67,6 @@ type GSIResponse struct {
 		XPM                        int `json:"xpm"`
 	}
 
-	Hero struct {
-		Xpos                       interface{} `json:"xpos"`
-		Ypos                       interface{} `json:"ypos"`
-		Id                         int `json:"id"`
-		Name                       string `json:"name"`
-		Level                      int `json:"level"`
-		Alive                      bool `json:"alive"`
-		RespawnSeconds             int `json:"respawn_seconds"`
-		BuybackCost                int `json:"buyback_cost"`
-		BuybackCooldown            int `json:"buyback_cooldown"`
-		Health                     int `json:"health"`
-		MaxHealth                  int `json:"max_health"`
-		HealthPercent              int `json:"health_percent"`
-		Mana                       int `json:"mana"`
-		MaxMana                    int `json:"max_mana"`
-		ManaPercent                int `json:"mana_percent"`
-		Silenced                   bool `json:"silenced"`
-		Stunned                    bool `json:"stunned"`
-		Disarmed                   bool `json:"disarmed"`
-		MagicImmune                bool `json:"magicimmune"`
-		Hexed                      bool `json:"hexed"`
-		Muted                      bool `json:"muted"`
-		Break                      bool `json:"break"`
-		Smoked                     bool `json:"smoked"`
-		HasDebuff                  bool `json:"has_debuff"`
-		Talent1                    bool `json:"talent_1"`
-		Talent2                    bool `json:"talent_2"`
-		Talent3                    bool `json:"talent_3"`
-		Talent4                    bool `json:"talent_4"`
-		Talent5                    bool `json:"talent_5"`
-		Talent6                    bool `json:"talent_6"`
-		Talent7                    bool `json:"talent_7"`
-		Talent8                    bool `json:"talent_8"`
-	}
 }
 
 func (r *GSIResponse) GetAuthToken() string {
