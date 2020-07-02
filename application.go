@@ -214,6 +214,58 @@ func (a *Application) CheckGameEndStatus() {
 	}
 }
 
+func (a *Application) ChannelMessageSend(channelId, content string) {
+	_, _ = a.Client.ChannelMessageSend(channelId, content)
+}
+
+func (a *Application) SendInstructions(guild *models.Guild, userId string) (err error) {
+
+	channel, err := a.Client.UserChannelCreate(userId)
+	if err != nil {
+		return err
+	}
+
+	instructions :=
+		"\n" +
+		"Dota2 GSI Api installation" +
+		"\n\n" +
+
+		"Find your dota2 local directory, Go to `Steam` and right click on `Dota2` then: \n" +
+		"> `Properties > Local Files > Browse Local Files` \n\n" +
+
+		"Then go to `game/dota2/cfg` and create a directory called `gamestate_integration`\n" +
+		"go to `gamestate_integration` and create a file called `gamestate_integration.cfg`\n" +
+		"and paste the below content into it! \n\n```" +
+
+		`"dota2-gsi Configuration"` +
+		"\n{\n" +
+		`    "uri"               "https://pepebot.irgeek.ir/"` + "\n" +
+		`    "timeout"           "5.0"` + "\n" +
+		`    "buffer"            "0.1"` + "\n" +
+		`    "throttle"          "0.1"` + "\n" +
+		`    "heartbeat"         "30.0"` + "\n" +
+		`    "data"` + "\n" +
+		"    {" + "\n" +
+		`        "provider"      "1"` + "\n" +
+		`        "map"           "1"` + "\n" +
+		`        "player"        "1"` + "\n" +
+		"    }" + "\n" +
+		`    "auth"` + "\n" +
+		"    {" + "\n" +
+		`         "token"         "` + guild.Token + `"` + "\n" +
+		"    }" + "\n" +
+		"}```" +
+
+		"\n Restart your game and You're ready to go find some matches! \n" +
+		"I will connect to main_voice_channel which is `" + guild.MainVoiceChannelID + "` in your server \n" +
+		"and remind you the runes every 5 minutes :sunglasses: ! \n\n" +
+
+		"Give us some feedback or write your issues here > https://github.com/MrJoshLab/pepe.bot/issues :heart:"
+
+	_, err = a.Client.ChannelMessageSend(channel.ID, instructions)
+	return
+}
+
 func (a *Application) RegisterAndServeBot() {
 
 	discord, err := discordgo.New("Bot " + a.DiscordAuthToken)
@@ -362,6 +414,27 @@ func (a *Application) RegisterAndServeBot() {
 						"Isn't that cool ? ")
 				break
 
+			case "instructions":
+				if m.Author.ID != guild.OwnerID {
+					a.ChannelMessageSend(channel.ID,
+						m.Author.Mention() + " Only the owner of the server can get instruction!")
+					return
+				}
+				if dbGuild.MainVoiceChannelID == "" {
+					a.ChannelMessageSend(channel.ID,
+						m.Author.Mention() + " First of all, you need to set your main_voice_channel. \n" +
+						"Use `-main_voice_channel {channel_id}` and then ask me for instructions!")
+					return
+				}
+				if err := a.SendInstructions(dbGuild, m.Author.ID); err != nil {
+					a.ChannelMessageSend(channel.ID,
+						m.Author.Mention() + " Could not send the instructions at the time. Please try again later!")
+					return
+				}
+				a.ChannelMessageSend(channel.ID,
+					m.Author.Mention() + " The instructions sent to your private chat successfully!")
+				return
+
 			case "disconnect", "dc", "leave":
 				gm, ok := a.GetGuildMatch(dbGuild.DiscordID)
 				if ok {
@@ -378,7 +451,7 @@ func (a *Application) RegisterAndServeBot() {
 
 				if len(command) == 2 {
 
-					if m.Author.ID != dbGuild.UserID {
+					if m.Author.ID != guild.OwnerID {
 						_, _ = a.Client.ChannelMessageSend(channel.ID,
 							m.Author.Mention() + " Only the owner of the server can change main_text_channel!")
 						return
