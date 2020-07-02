@@ -1,0 +1,5 @@
+pepebot.irgeek.ir {
+    proxy / pepebot.bot:9001 {
+        transparent
+    }
+}
