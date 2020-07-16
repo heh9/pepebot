@@ -728,6 +728,14 @@ func (a *Application) ListenAndServeGSIHttpServer()  {
 			return
 		}
 
+		if response.Map.Name != "start" {
+			_ = json.NewEncoder(w).Encode(map[string] interface{} {
+				"code":     0,
+				"status":   "failed",
+			})
+			return
+		}
+
 		if authToken == "" {
 			_ = json.NewEncoder(w).Encode(map[string] interface{} {
 				"code":     0,
