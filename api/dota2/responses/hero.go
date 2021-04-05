@@ -2,42 +2,74 @@ package responses
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
+	"net/http"
+
+	"github.com/mrjoshlab/pepe.bot/config"
 )
 
 type Hero struct {
-	ID             int      `json:"id"`
-	LocalizedName  string   `json:"localized_name"`
-	Name           string   `json:"name"`
-	Icon           string `json:"icon"`
+	ID            int    `json:"id"`
+	LocalizedName string `json:"localized_name"`
+	Name          string `json:"name"`
+	Icon          string `json:"icon"`
 }
 
-var heros []Hero
+type HeroesResponse struct {
+	Result struct {
+		Heroes []Hero `json:"heroes"`
+		Status uint32 `json:"status"`
+		Count  uint32 `json:"count"`
+	} `json:"result"`
+}
 
-func init() {
+var (
+	err    error
+	heroes []Hero
+)
 
-	jsonFile, err := os.Open("./api/dota2/heros.json")
+func FeatchHeroes() error {
+
+	url := fmt.Sprintf(
+		"https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/?key=%s&language=en_us&format=JSON",
+		config.Map.Steam.WebApiToken,
+	)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
-	defer jsonFile.Close()
+	req.Header.Set("Content-Type", "application/json")
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	_ = json.Unmarshal(byteValue, &heros)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	bufferBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	response := &HeroesResponse{}
+	if jsonErr := json.Unmarshal(bufferBytes, response); jsonErr != nil {
+		return jsonErr
+	}
+
+	heroes = response.Result.Heroes
+	return nil
 }
-
 func GetHeroByID(id int) (Hero, error) {
 
-	if len(heros) == 0 {
-		return Hero{}, errors.New("Could not found any hero in database!")
+	if len(heroes) == 0 {
+		return Hero{}, errors.New("Could not find any hero in database!")
 	}
 
-	for _, hero := range heros {
+	for _, hero := range heroes {
 		if hero.ID == id {
 			return hero, nil
 		}

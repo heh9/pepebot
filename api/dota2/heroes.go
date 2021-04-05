@@ -7,24 +7,15 @@ import (
 	"net/http"
 
 	"github.com/mrjoshlab/pepe.bot/api/dota2/responses"
+	"github.com/mrjoshlab/pepe.bot/config"
 )
 
-type Client struct {
-	Key     string
-	BaseUri string
-}
+func GetHeroes() (*responses.HeroesResponse, error) {
 
-func NewClient(key string) *Client {
-	return &Client{
-		Key:     key,
-		BaseUri: "https://api.steampowered.com",
-	}
-}
-
-func (c *Client) Match(matchID string) (*responses.Match, error) {
-
-	url := fmt.Sprintf("%s/IDOTA2Match_570/GetMatchDetails/v1/?match_id=%s&key=%s", c.BaseUri, matchID, c.Key)
-
+	url := fmt.Sprintf(
+		"https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/?key=%s&language=en_us&format=JSON",
+		config.Map.Steam.WebApiToken,
+	)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -41,7 +32,7 @@ func (c *Client) Match(matchID string) (*responses.Match, error) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	response := &responses.Match{}
+	response := &responses.HeroesResponse{}
 	if jsonErr := json.Unmarshal(body, response); jsonErr != nil {
 		return nil, jsonErr
 	}

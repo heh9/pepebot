@@ -2,47 +2,12 @@ version: '3'
 
 services:
 
-  caddy:
-    build:
-      context: .
-      dockerfile: Caddy.Dockerfile
-    container_name: pepebot.caddy
-    ports:
-      - 80:80
-      - 443:443
-    volumes:
-      - /root/.caddy:/root/.caddy
-    depends_on:
-      - bot
-    restart: always
-    networks:
-      - pepebot
-
   bot:
     container_name: pepebot.bot
-    build: .
+    image: iamalirezaj/pepebot:latest
     restart: always
-    depends_on:
-      - db
-    networks:
-      - pepebot
-
-  db:
-    image: mongo:latest
-    container_name: pepebot.db
-    environment:
-      - MONGO_INITDB_DATABASE=pepebot
-      - MONGO_INITDB_ROOT_USERNAME=service
-      - MONGO_INITDB_ROOT_PASSWORD=CX66qXYmS8xsLxBxZkMqDHwr
+    ports:
+      - 9001:9001
     volumes:
-      - ./db/data:/data/db
-    restart: always
-    networks:
-      - pepebot
-
-volumes:
-  cdn:
-
-networks:
-  pepebot:
-    driver: bridge
+      - $PWD/db/data:/data
+      - $PWD/config.hcl:/config/config.hcl

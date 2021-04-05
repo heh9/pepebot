@@ -1,21 +1,21 @@
 package api
 
 import (
+	"errors"
 	"fmt"
-	"github.com/MrJoshLab/pepe.bot/api/dota2"
-	"github.com/bwmarrin/discordgo"
-	"github.com/pkg/errors"
 	"log"
-	"os"
 	"strconv"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/mrjoshlab/pepe.bot/api/dota2"
+	"github.com/mrjoshlab/pepe.bot/config"
 )
 
 func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session, g *discordgo.Guild) (string, error) {
 
 	message := ""
-
-	client := dota2.NewClient(os.Getenv("STEAM_WEBAPI_API_KEY"))
+	client := dota2.NewClient(config.Map.Steam.WebApiToken)
 
 	match, err := client.Match(mid)
 	if err != nil {
@@ -66,7 +66,6 @@ func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session
 		message += fmt.Sprintln()
 	}
 
-
 	if kills, hero, player := match.GetMostHeroKills(); kills != 0 {
 
 		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
@@ -92,7 +91,6 @@ func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session
 
 		message += fmt.Sprintln()
 	}
-
 
 	if healing, hero, player := match.GetMostHeroHealing(); healing != 0 {
 

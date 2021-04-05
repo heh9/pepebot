@@ -1,26 +1,40 @@
 package main
 
 import (
-	"github.com/MrJoshLab/pepe.bot/components"
-	_ "github.com/joho/godotenv/autoload"
-	cmap "github.com/orcaman/concurrent-map"
+	"flag"
+	"fmt"
 	"log"
-	"os"
+
+	"github.com/mrjoshlab/pepe.bot/components"
+	"github.com/mrjoshlab/pepe.bot/config"
+	cmap "github.com/orcaman/concurrent-map"
 )
 
-func init() {
-	log.SetFlags(log.Lshortfile | log.Ltime)
-}
+var (
+	httpPort *int
+	httpHost *string
+)
 
 func main() {
 
+	log.SetFlags(log.Lshortfile | log.Ltime)
+
+	configFileName := flag.String("config-file", "config.hcl", "config.hcl file")
+	httpHost = flag.String("host", "0.0.0.0", "Http Host")
+	httpPort = flag.Int("port", 9001, "Http Port")
+	flag.Parse()
+
+	log.Printf("Loading ConfigMap from file: [%s]", *configFileName)
+
+	if err := config.LoadFile(*configFileName); err != nil {
+		log.Fatal(fmt.Errorf("could not load config: %v", err))
+	}
+
 	// Define a new application
 	application := &Application{
-		DiscordAuthToken:      os.Getenv("DISCORD_API_TOKEN"),
-		GSIHttpPort:           os.Getenv("DOTA2_GSI_HTTP_PORT"),
-		GsiChannel:            make(chan *components.GSIResponse),
-		GameEndChannel:        make(chan *GameEndChannel),
-		GuildLiveMatches:      cmap.New(),
+		GsiChannel:       make(chan *components.GSIResponse),
+		GameEndChannel:   make(chan *GameEndChannel),
+		GuildLiveMatches: cmap.New(),
 	}
 
 	// register the discord bot and run
@@ -36,5 +50,5 @@ func main() {
 	go application.CheckGameEndStatus()
 
 	// Listen and serve gsi http server
-	application.ListenAndServeGSIHttpServer()
+	application.ListenAndServeGSIHttpServer(*httpHost, *httpPort)
 }

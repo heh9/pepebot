@@ -1,45 +1,21 @@
 package db
 
 import (
-	"context"
 	"fmt"
-	_ "github.com/joho/godotenv/autoload"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"os"
-	"time"
+
+	"github.com/mrjoshlab/pepe.bot/config"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var (
-	Connection *mongo.Database
+	Connection *gorm.DB
 )
 
-func init() {
-
-	ctx, _ := context.WithTimeout(context.Background(), 20 * time.Second)
-
-	var (
-		host = os.Getenv("DB_HOST")
-		port = os.Getenv("DB_PORT")
-	)
-
-	opts := options.Client()
-	opts.ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port))
-	opts.SetAuth(options.Credential{
-		Username: os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASS"),
-		PasswordSet: true,
-	})
-
-	client, err := mongo.NewClient(opts)
+func Configure() (err error) {
+	Connection, err = gorm.Open(sqlite.Open(config.Map.DB.Path), nil)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("Error opening sqlite3 database CLI: %s", err)
 	}
-
-	if err := client.Connect(ctx); err != nil {
-		log.Fatal(err)
-	}
-
-	Connection = client.Database(os.Getenv("DB_NAME"))
+	return nil
 }

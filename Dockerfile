@@ -1,21 +1,22 @@
-FROM golang:1.14
-
-# Update and install curl
-RUN apt-get update
+FROM golang:1.16-alpine AS builder
 
 # Creating work directory
-RUN mkdir /code
+RUN mkdir /build
 
 # Adding project to work directory
-ADD . /code
+ADD . /build
 
 # Choosing work directory
-WORKDIR /code
+WORKDIR /build
 
 # build project
-RUN go build -o pepe_bot .
+RUN go build -o pepebot .
+
+FROM alpine
+
+COPY --from=builder /build/pepebot /usr/bin/pepebot
 
 # Expose port
 EXPOSE 9001
 
-CMD ["./pepe_bot"]
+ENTRYPOINT ["/usr/bin/pepebot"]

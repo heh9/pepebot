@@ -1,15 +1,23 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Player struct {
-	ID             *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
-	Name           string                `bson:"name, omitempty" json:"name"`
-	AccountID      string                `bson:"account_id, omitempty" json:"account_id"`
-	UserDiscordID  string                `bson:"user_discord_id, omitempty" json:"user_discord_id"`
-	GuildID        string                `bson:"guild_id, omitempty" json:"guild_id"`
-	CreatedAt      time.Time             `bson:"created_at, omitempty" json:"created_at,omitempty"`
+	ID            uint32    `gorm:"primary_key" json:"id"`
+	Name          string    `bson:"name" json:"name"`
+	AccountID     string    `bson:"account_id" json:"account_id"`
+	UserDiscordID string    `bson:"user_discord_id" json:"user_discord_id"`
+	GuildID       string    `bson:"guild_id" json:"guild_id"`
+	CreatedAt     time.Time `bson:"created_at" json:"created_at"`
+}
+
+func (p *Player) BeforeCreate(db *gorm.DB) error {
+	p.ID = uuid.New().ID()
+	p.CreatedAt = time.Now()
+	return nil
 }

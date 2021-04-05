@@ -2,29 +2,29 @@ package responses
 
 type Match struct {
 	Result struct {
-		Players               []Player    `json:"players"`
-		RadiantWin            bool        `json:"radiant_win"`
-		Duration              int         `json:"duration"`
-		PreGameDuration       int         `json:"pre_game_duration"`
-		StartTime             int         `json:"start_time"`
-		MatchID               int64       `json:"match_id"`
-		MatchSeqNum           int64       `json:"match_seq_num"`
-		TowerStatusRadiant    int         `json:"tower_status_radiant"`
-		TowerStatusDire       int         `json:"tower_status_dire"`
-		BarracksStatusRadiant int         `json:"barracks_status_radiant"`
-		BarracksStatusDire    int         `json:"barracks_status_dire"`
-		Cluster               int         `json:"cluster"`
-		FirstBloodTime        int         `json:"first_blood_time"`
-		LobbyType             int         `json:"lobby_type"`
-		HumanPlayers          int         `json:"human_players"`
-		Leagueid              int         `json:"leagueid"`
-		PositiveVotes         int         `json:"positive_votes"`
-		NegativeVotes         int         `json:"negative_votes"`
-		GameMode              int         `json:"game_mode"`
-		Flags                 int         `json:"flags"`
-		Engine                int         `json:"engine"`
-		RadiantScore          int         `json:"radiant_score"`
-		DireScore             int         `json:"dire_score"`
+		Players               []Player `json:"players"`
+		RadiantWin            bool     `json:"radiant_win"`
+		Duration              int      `json:"duration"`
+		PreGameDuration       int      `json:"pre_game_duration"`
+		StartTime             int      `json:"start_time"`
+		MatchID               int64    `json:"match_id"`
+		MatchSeqNum           int64    `json:"match_seq_num"`
+		TowerStatusRadiant    int      `json:"tower_status_radiant"`
+		TowerStatusDire       int      `json:"tower_status_dire"`
+		BarracksStatusRadiant int      `json:"barracks_status_radiant"`
+		BarracksStatusDire    int      `json:"barracks_status_dire"`
+		Cluster               int      `json:"cluster"`
+		FirstBloodTime        int      `json:"first_blood_time"`
+		LobbyType             int      `json:"lobby_type"`
+		HumanPlayers          int      `json:"human_players"`
+		Leagueid              int      `json:"leagueid"`
+		PositiveVotes         int      `json:"positive_votes"`
+		NegativeVotes         int      `json:"negative_votes"`
+		GameMode              int      `json:"game_mode"`
+		Flags                 int      `json:"flags"`
+		Engine                int      `json:"engine"`
+		RadiantScore          int      `json:"radiant_score"`
+		DireScore             int      `json:"dire_score"`
 		PicksBans             []struct {
 			IsPick bool `json:"is_pick"`
 			HeroID int  `json:"hero_id"`

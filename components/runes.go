@@ -5,32 +5,26 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+
+	"github.com/mrjoshlab/pepe.bot/config"
 )
 
 type Runes struct {
-	ClockTime   string
-	RuneTimes   []string
-	Sounds      []string
+	ClockTime string
+	RuneTimes []string
+	Sounds    []string
 }
 
 func NewRunes() *Runes {
 	return &Runes{
-		Sounds: []string {
-			"jebaited1",
-			"jebaited2",
-			"pepegas",
-			"pepegas2",
-		},
+		Sounds: config.Map.Sounds.Runes,
 	}
 }
 
-func RNG(min int, max int) int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max-min) + min
-}
-
 func (r *Runes) GetRandomVoiceFileName() string {
-	return r.Sounds[RNG(0, len(r.Sounds) - 1)]
+	source := rand.NewSource(time.Now().Unix())
+	random := rand.New(source)
+	return r.Sounds[random.Intn(len(r.Sounds))]
 }
 
 func (r *Runes) Up() (bool, string) {

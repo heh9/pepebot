@@ -4,7 +4,7 @@ import (
 	"strconv"
 )
 
-var Rankings = map[int] map[int] string {
+var Rankings = map[int]map[int]string{
 	1: {
 		1: "Herald 1",
 		2: "Herald 2",
@@ -87,8 +87,8 @@ func GetPlayerMedalString(rankTier int) string {
 		return "Unknown"
 	}
 
-	tier , _ := strconv.Atoi(rankTierString[0:1])
-	rank , _ := strconv.Atoi(rankTierString[1:2])
+	tier, _ := strconv.Atoi(rankTierString[0:1])
+	rank, _ := strconv.Atoi(rankTierString[1:2])
 
 	return Rankings[tier][rank]
 }

@@ -3,34 +3,34 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"github.com/iamalirezaj/go-opendota"
-	_ "github.com/joho/godotenv/autoload"
 	"net/http"
-	"os"
+
+	"github.com/iamalirezaj/go-opendota"
+	"github.com/mrjoshlab/pepe.bot/config"
 )
 
 type Response struct {
 	Match struct {
-		ServerSteamId   int64     `json:"server_steam_id"`
-		MatchID         int64     `json:"matchid"`
+		ServerSteamId int64 `json:"server_steam_id"`
+		MatchID       int64 `json:"matchid"`
 	} `json:"match"`
 
-	Teams               []Team    `json:"teams"`
+	Teams []Team `json:"teams"`
 }
 
 type Team struct {
-	Players             []Player  `json:"players"`
+	Players []Player `json:"players"`
 }
 
 type Player struct {
-	AccountID           int64     `json:"accountid"`
-	Name                string    `json:"name"`
+	AccountID int64  `json:"accountid"`
+	Name      string `json:"name"`
 }
 
 type OpenDotaPlayer struct {
-	AccountID           int64
-	Name                string
-	Rank                string
+	AccountID int64
+	Name      string
+	Rank      string
 }
 
 func GetPlayerOpenDotaProfile(accountID int64) (*OpenDotaPlayer, error) {
@@ -44,8 +44,8 @@ func GetPlayerOpenDotaProfile(accountID int64) (*OpenDotaPlayer, error) {
 
 	return &OpenDotaPlayer{
 		AccountID: int64(player.Profile.AccountID),
-		Name: player.Profile.Personaname,
-		Rank: GetPlayerMedalString(player.RankTier),
+		Name:      player.Profile.Personaname,
+		Rank:      GetPlayerMedalString(player.RankTier),
 	}, nil
 }
 
@@ -55,7 +55,7 @@ func GetRealTimeStats(serverSteamID string) (*Response, error) {
 
 	client := http.Client{}
 	uri := "https://api.steampowered.com/IDOTA2MatchStats_570/GetRealtimeStats/v001/?server_steam_id=" +
-		serverSteamID + "&key=" + os.Getenv("STEAM_WEBAPI_API_KEY")
+		serverSteamID + "&key=" + config.Map.Steam.WebApiToken
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {

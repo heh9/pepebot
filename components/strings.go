@@ -1,5 +1,3 @@
-// thanks to @elithrar for the code to create the secret token!
-// source: https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/
 package components
 
 import (
@@ -22,11 +20,9 @@ func RandomNumber(length int) string {
 	var letters = []rune("0123456789")
 	b := make([]rune, length)
 	for i := range b {
-
 		if letter := letters[rand.Intn(len(letters))]; letter != 0 {
 			b[i] = letters[rand.Intn(len(letters))]
 		}
-
 		continue
 	}
 	return string(b)

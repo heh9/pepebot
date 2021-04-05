@@ -1,23 +1,28 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Guild struct {
-	ID         *primitive.ObjectID   `bson:"_id, omitempty" json:"id, omitempty"`
+	ID                 uint32    `gorm:"primary_key" json:"id"`
+	Name               string    `bson:"name" json:"name"`
+	DiscordID          string    `bson:"discord_id" json:"discord_id"`
+	UserID             string    `bson:"user_id" json:"user_id"`
+	Deleted            bool      `bson:"deleted" json:"deleted"`
+	MainTextChannelID  string    `bson:"main_text_channel_id" json:"main_text_channel_id"`
+	MainVoiceChannelID string    `bson:"main_voice_channel_id" json:"main_voice_channel_id"`
+	Token              string    `bson:"token" json:"token"`
+	CreatedAt          time.Time `bson:"created_at" json:"created_at"`
+	DeletedAt          time.Time `bson:"deleted_at" json:"deleted_at"`
+}
 
-	Name       string                `bson:"name, omitempty" json:"name"`
-	DiscordID  string                `bson:"discord_id, omitempty" json:"discord_id"`
-	UserID     string                `bson:"user_id, omitempty" json:"user_id"`
-	Deleted    bool                  `bson:"deleted, omitempty" json:"deleted"`
-
-	MainTextChannelID   string       `bson:"main_text_channel_id, omitempty" json:"main_text_channel_id"`
-	MainVoiceChannelID  string       `bson:"main_voice_channel_id, omitempty" json:"main_voice_channel_id"`
-
-	Token      string                `bson:"token, omitempty" json:"token"`
-
-	CreatedAt  time.Time             `bson:"created_at, omitempty" json:"created_at,omitempty"`
-	DeletedAt  time.Time             `bson:"deleted_at, omitempty" json:"deleted_at,omitempty"`
+func (g *Guild) BeforeCreate(db *gorm.DB) error {
+	g.ID = uuid.New().ID()
+	g.CreatedAt = time.Now()
+	g.DeletedAt = time.Now()
+	return nil
 }

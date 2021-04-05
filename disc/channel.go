@@ -1,13 +1,14 @@
 package disc
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"log"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type Channel struct {
-	ID               string
-	Client           *discordgo.Session
+	ID     string
+	Client *discordgo.Session
 }
 
 func (c *Channel) Join() (*discordgo.VoiceConnection, error) {
@@ -23,7 +24,7 @@ func (c *Channel) Join() (*discordgo.VoiceConnection, error) {
 		return nil, err
 	}
 
-	voiceConnection, err := c.Client.ChannelVoiceJoin(guild.ID, channel.ID, false, true);
+	voiceConnection, err := c.Client.ChannelVoiceJoin(guild.ID, channel.ID, false, true)
 	if err != nil {
 		log.Println(err)
 		return nil, err

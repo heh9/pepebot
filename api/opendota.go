@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/MrJoshLab/pepe.bot/api/dota2/responses"
-	"github.com/iamalirezaj/go-opendota"
 	"net/http"
 	"strconv"
+
+	"github.com/mrjoshlab/pepe.bot/api/dota2/responses"
+	"github.com/iamalirezaj/go-opendota"
 )
 
 func GetMostHeroPlayed(accountID int64) (responses.Hero, error) {
