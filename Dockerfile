@@ -1,16 +1,16 @@
-FROM alpine AS builder
+FROM golang:1.16 AS builder
 
-RUN apk update
+# Creating work directory
+RUN mkdir /build
 
-RUN apk upgrade
-
-RUN apk add --update go=1.16 gcc=6.3.0-r4 g++=6.3.0-r4
-
-WORKDIR /build
-
+# Adding project to work directory
 ADD . /build
 
-RUN CGO_ENABLED=1 go build -o pepebot .
+# Choosing work directory
+WORKDIR /build
+
+# build project
+RUN go build -o pepebot .
 
 FROM alpine
 
