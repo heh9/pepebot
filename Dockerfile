@@ -1,13 +1,12 @@
-FROM golang:1.16 AS builder
+FROM golang:1.16-alpine AS builder
 
-# Creating work directory
-RUN mkdir /build
-
-# Adding project to work directory
-ADD . /build
+RUN apk add build-base
 
 # Choosing work directory
 WORKDIR /build
+
+# Adding project to work directory
+ADD . /build
 
 # build project
 RUN go build -o pepebot .
