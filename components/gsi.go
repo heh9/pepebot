@@ -16,7 +16,9 @@ const (
 )
 
 type GSIResponse struct {
-	Auth map[string]string `json:"auth"`
+	Auth struct {
+		Token string `json:"token"`
+	} `json:"auth"`
 
 	DiscordGuild *discordgo.Guild
 	Guild        *models.Guild
@@ -65,8 +67,4 @@ type GSIResponse struct {
 		GPM                int                    `json:"gpm"`
 		XPM                int                    `json:"xpm"`
 	}
-}
-
-func (r *GSIResponse) GetAuthToken() string {
-	return r.Auth["token"]
 }

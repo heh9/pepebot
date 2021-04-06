@@ -765,48 +765,54 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		w.Header().Add("Content-Type", "application/json")
 
 		var (
-			response  = new(components.GSIResponse)
-			guild     = new(models.Guild)
-			authToken = response.GetAuthToken()
+			response = new(components.GSIResponse)
+			guild    = new(models.Guild)
 		)
 
 		if err := json.NewDecoder(r.Body).Decode(response); err != nil {
+			log.Println(err)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": "Could not decode body.",
 			})
 			return
 		}
 
 		if response.Provider.Appid != 570 {
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": fmt.Sprintf("Provider should be {570/Dota2} Not [%d]", response.Provider.Appid),
 			})
 			return
 		}
 
 		if response.Map.Name != "start" {
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": fmt.Sprintf("Map sould be start, not [%s]", response.Map.Name),
 			})
 			return
 		}
 
-		if authToken == "" {
+		if response.Auth.Token == "" {
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": "Token is required",
 			})
 			return
 		}
 
-		result := db.Connection.Where("token =?", response.GetAuthToken()).First(&guild)
+		result := db.Connection.Where("token =?", response.Auth.Token).First(&guild)
 		if err := result.Error; err != nil {
+			log.Println(err)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": fmt.Sprintf("Could not find guild with token [%s]", response.Auth.Token),
 			})
 			return
 		}
@@ -815,8 +821,9 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		if err != nil {
 			log.Println(err)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"code":   0,
-				"status": "failed",
+				"code":    0,
+				"status":  "failed",
+				"message": fmt.Sprintf("Could not find discord guild with id [%s]", guild.DiscordID),
 			})
 			return
 		}
@@ -829,6 +836,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 			"code":   200,
 			"status": "success",
 		})
+		return
 
 	})
 
