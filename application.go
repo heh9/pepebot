@@ -230,6 +230,7 @@ func (a *Application) RegisterAndServeBot() {
 	if err != nil {
 		log.Panicf("Could not connect to discord :%v", err)
 	}
+	a.Client = discord
 
 	discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		commandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -460,8 +461,11 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 			return
 		}
 
+		log.Println(guild.DiscordID)
+
 		discordGuild, err := a.Client.Guild(guild.DiscordID)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
