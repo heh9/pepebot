@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +17,7 @@ import (
 	"github.com/mrjoshlab/pepe.bot/config"
 	"github.com/mrjoshlab/pepe.bot/db"
 	"github.com/mrjoshlab/pepe.bot/disc"
+	"github.com/mrjoshlab/pepe.bot/messages"
 	"github.com/mrjoshlab/pepe.bot/models"
 	cmap "github.com/orcaman/concurrent-map"
 	"github.com/polds/imgbase64"
@@ -195,72 +195,16 @@ func (a *Application) CheckGameEndStatus() {
 		case gameMatch := <-a.GameEndChannel:
 
 			if gm, ok := a.GetGuildMatch(gameMatch.GuildId); ok {
-
 				if gm.HasVoiceConnection() {
-					_ = gm.VoiceConnection.Disconnect()
+					gm.VoiceConnection.Disconnect()
 				}
-
 				msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client, gm.DiscordGuild)
-				_, _ = a.Client.ChannelMessageSend(gm.Guild.MainTextChannelID, msg)
-
+				a.Client.ChannelMessageSend(gm.Guild.MainTextChannelID, msg)
 				a.GuildLiveMatches.Remove(gm.DiscordGuild.ID)
-
 			}
 
 		}
 	}
-}
-
-func (a *Application) ChannelMessageSend(channelId, content string) {
-	_, _ = a.Client.ChannelMessageSend(channelId, content)
-}
-
-func (a *Application) SendInstructions(guild *models.Guild, userId string) (err error) {
-
-	channel, err := a.Client.UserChannelCreate(userId)
-	if err != nil {
-		return err
-	}
-
-	instructions :=
-		"\n" +
-			"Dota2 GSI Api installation" +
-			"\n\n" +
-
-			"Find your dota2 local directory, Go to `Steam` and right click on `Dota2` then: \n" +
-			"> `Properties > Local Files > Browse Local Files` \n\n" +
-
-			"Then go to `game/dota2/cfg` and create a directory called `gamestate_integration`\n" +
-			"go to `gamestate_integration` and create a file called `gamestate_integration.cfg`\n" +
-			"and paste the below content into it! \n\n```" +
-
-			`"dota2-gsi Configuration"` +
-			"\n{\n" +
-			`    "uri"               "https://pepebot.mrjosh.net"` + "\n" +
-			`    "timeout"           "5.0"` + "\n" +
-			`    "buffer"            "0.1"` + "\n" +
-			`    "throttle"          "0.1"` + "\n" +
-			`    "heartbeat"         "30.0"` + "\n" +
-			`    "data"` + "\n" +
-			"    {" + "\n" +
-			`        "provider"      "1"` + "\n" +
-			`        "map"           "1"` + "\n" +
-			`        "player"        "1"` + "\n" +
-			"    }" + "\n" +
-			`    "auth"` + "\n" +
-			"    {" + "\n" +
-			`         "token"         "` + guild.Token + `"` + "\n" +
-			"    }" + "\n" +
-			"}```" +
-
-			"\n Restart your game and You're ready to go find some matches! \n" +
-			"I will connect to main_voice_channel which is `" + guild.MainVoiceChannelID + "` in your server \n" +
-			"and remind you the runes every 5 minutes :sunglasses: ! \n\n" +
-
-			"Give us some feedback or write your issues here > https://github.com/mrjoshlab/pepe.bot/issues :heart:"
-
-	_, err = a.Client.ChannelMessageSend(channel.ID, instructions)
-	return
 }
 
 func (a *Application) RegisterAndServeBot() {
@@ -287,19 +231,132 @@ func (a *Application) RegisterAndServeBot() {
 		log.Panicf("Could not connect to discord :%v", err)
 	}
 
-	a.Client = discord
+	discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		commandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+			"help":               messages.SendHelpText,
+			"match_history":      messages.ShowMatchHistory,
+			"about":              messages.SendAboutText,
+			"instructions":       messages.SendInstructions,
+			"main_text_channel":  messages.SetMainTextChannel,
+			"main_voice_channel": messages.SetMainVoiceChannel,
+			"player_add":         messages.AddPlayer,
+			"player_remove":      messages.RemovePlayer,
+			"join":               messages.ConnectVoiceChannel(a.GuildLiveMatches),
+			"leave":              messages.DisconnectVoiceChannel(a.GuildLiveMatches),
+		}
+		if h, ok := commandHandlers[i.Data.Name]; ok {
+			h(s, i)
+		}
+	})
 
-	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Disconnect) {
+	discord.AddHandler(func(s *discordgo.Session, event *discordgo.Disconnect) {
 		log.Println("Disconnected from discord!")
 	})
 
-	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
+	discord.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
+
 		log.Println("Logged in as !" + event.User.ID)
+
+		commands := []*discordgo.ApplicationCommand{
+			{
+				Name:        "help",
+				Description: "Shows information about pepebot",
+			},
+			{
+				Name:        "join",
+				Description: "Sommons the bot to your voice channel",
+			},
+			{
+				Name:        "leave",
+				Description: "Leave the voice channel",
+			},
+			{
+				Name:        "about",
+				Description: "Shows about pepebot",
+			},
+			{
+				Name:        "instructions",
+				Description: "Shows instructions about how to setup pepebot for your own discord server",
+			},
+			{
+				Name:        "match_history",
+				Description: "Shows summary of a dota2 match",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionInteger,
+						Name:        "match_id",
+						Description: "Dota 2 match id",
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "main_text_channel",
+				Description: "Set main_text_channel for match summaries at the end of every game",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "channel_id",
+						Description: "Text channel id",
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "main_voice_channel",
+				Description: "Set main_voice_channel for pepebot to join every game to remind the runes",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "channel_id",
+						Description: "Voice channel id",
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "player_add",
+				Description: "Assing user's steam id",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionUser,
+						Name:        "user",
+						Description: "The discord user",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "steam_account_id",
+						Description: "User's steam account id",
+						Required:    true,
+					},
+				},
+			},
+			{
+				Name:        "player_remove",
+				Description: "Disconnect a player",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionUser,
+						Name:        "user",
+						Description: "The discord user",
+						Required:    true,
+					},
+				},
+			},
+		}
+
+		for _, cmd := range commands {
+			if _, err := s.ApplicationCommandCreate(s.State.User.ID, "", cmd); err != nil {
+				log.Panicf("Cannot create '%v' command: %v", cmd.Name, err)
+			}
+		}
+
 	})
 
-	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.Connect) {
+	discord.AddHandler(func(s *discordgo.Session, event *discordgo.Connect) {
 		log.Println("Connected to discord!")
-		_ = s.UpdateStatusComplex(discordgo.UpdateStatusData{
+		s.UpdateStatusComplex(discordgo.UpdateStatusData{
 			Activities: []*discordgo.Activity{
 				{
 					Name: "Dota 2",
@@ -309,7 +366,11 @@ func (a *Application) RegisterAndServeBot() {
 		})
 	})
 
-	a.Client.AddHandler(func(s *discordgo.Session, event *discordgo.GuildCreate) {
+	discord.AddHandler(func(s *discordgo.Session, event *discordgo.GuildCreate) {
+
+		if event.Guild.Unavailable {
+			return
+		}
 
 		var (
 			guildModel = new(models.Guild)
@@ -329,429 +390,8 @@ func (a *Application) RegisterAndServeBot() {
 
 	})
 
-	a.Client.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-		if m.Author.ID == s.State.User.ID {
-			return
-		}
-
-		if strings.HasPrefix(m.Content, "-") {
-
-			channel, err := s.State.Channel(m.ChannelID)
-			if err != nil {
-				// Could not find channel.
-				return
-			}
-
-			// Find the guild for that channel.
-			guild, err := s.State.Guild(channel.GuildID)
-			if err != nil {
-				// Could not find guild.
-				return
-			}
-
-			var (
-				dbGuild = new(models.Guild)
-				result  = db.Connection.Where("discord_id =?", m.GuildID).Where("user_id =?", m.Author.ID).First(&dbGuild)
-			)
-			if err := result.Error; err != nil {
-				// Could not find guild from database.
-				return
-			}
-
-			prefixCommand := strings.Split(strings.TrimSpace(m.Content), "-")
-			command := strings.Split(prefixCommand[1], " ")
-
-			switch command[0] {
-			case "help":
-
-				helpText := "\n"
-
-				if dbGuild.MainTextChannelID == "" {
-					helpText += "Set MainTextChannel with `-main_text_channel {channel_id}`"
-				} else {
-					mainTextChannel, err := a.Client.Channel(dbGuild.MainTextChannelID)
-					if err == nil {
-						helpText +=
-							"MainTextChannel is " + mainTextChannel.Mention() + " \n" +
-								"If you want to change this you can use: `-main_text_channel {channel_id}`\n\n"
-					} else {
-						helpText += "Set MainTextChannel with `-main_text_channel {channel_id}`"
-					}
-				}
-
-				if dbGuild.MainVoiceChannelID == "" {
-					helpText += "Set MainVoiceChannel with `-main_voice_channel {voice_channel_id}`\n"
-				} else {
-					mainVoiceChannel, err := a.Client.Channel(dbGuild.MainVoiceChannelID)
-					if err == nil {
-						helpText +=
-							"MainVoiceChannel is " + mainVoiceChannel.Mention() + " \n" +
-								"If you want to change this you can use: `-main_voice_channel {channel_id}`\n\n"
-					} else {
-						helpText += "Set MainVoiceChannel with `-main_voice_channel {channel_id}`\n"
-					}
-				}
-
-				helpText +=
-
-					"Connect a dota2 player `-pa @mention_user [dota2_friend_id]`\n" +
-						"Disconnect a dota2 player  `-pr @mention_user`\n" +
-						"Get a summary of a dota2 match `-mh [match_id]`\n" +
-						"Join voice channel that youre in `-join`\n" +
-						"Disconnect from voice channel that bot connected to `-dc`\n\n " +
-
-						"** If you having some issues with disconnecting the bot manually\n" +
-						"  you should use `-dc` command to disconnect it! ** \n\n" +
-
-						"This bot is a runes reminder bot for dota 2 games that works with" +
-						" Dota 2 GSI API.\n" +
-						"You can get install instruction with command: `-instructions` \n" +
-						"Isn't that cool ? "
-
-				_, _ = a.Client.ChannelMessageSend(channel.ID, helpText)
-				break
-
-			case "about":
-				_, _ = a.Client.ChannelMessageSend(channel.ID,
-					m.Author.Mention()+" This bot is a runes reminder bot for dota 2 games that works with"+
-						" Dota 2 GSI API. \n"+
-						"Isn't that cool ? ")
-				break
-
-			case "instructions":
-				if m.Author.ID != guild.OwnerID {
-					a.ChannelMessageSend(channel.ID,
-						m.Author.Mention()+" Only the owner of the server can get instruction!")
-					return
-				}
-				if dbGuild.MainVoiceChannelID == "" {
-					a.ChannelMessageSend(channel.ID,
-						m.Author.Mention()+" First of all, you need to set your main_voice_channel. \n"+
-							"Use `-main_voice_channel {channel_id}` and then ask me for instructions!")
-					return
-				}
-				if err := a.SendInstructions(dbGuild, m.Author.ID); err != nil {
-					a.ChannelMessageSend(channel.ID,
-						m.Author.Mention()+" Could not send the instructions at the time. Please try again later!")
-					return
-				}
-				a.ChannelMessageSend(channel.ID,
-					m.Author.Mention()+" The instructions sent to your private chat successfully!")
-				return
-
-			case "disconnect", "dc", "leave":
-				gm, ok := a.GetGuildMatch(dbGuild.DiscordID)
-				if ok {
-					if gm.HasVoiceConnection() {
-						_ = gm.VoiceConnection.Disconnect()
-						a.GuildLiveMatches.Remove(gm.DiscordGuild.ID)
-						_, _ = a.Client.ChannelMessageSend(channel.ID,
-							m.Author.Mention()+" Bot disconnected from voice channel!")
-					}
-				}
-				break
-
-			case "main_text_channel":
-
-				if len(command) == 2 {
-
-					if m.Author.ID != guild.OwnerID {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Only the owner of the server can change main_text_channel!",
-							m.Author.Mention(),
-						))
-						return
-					}
-
-					mainTextChannel, err := a.Client.Channel(command[1])
-					if err != nil {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Could not find any channels with id: `%s`!",
-							m.Author.Mention(),
-							command[1],
-						))
-						return
-					}
-
-					updateQuery := db.Connection.Model(&models.Guild{}).Where("discord_id =?", dbGuild.DiscordID).Updates(map[string]interface{}{
-						"main_text_channel_id": mainTextChannel.ID,
-					})
-
-					if updateQuery.Error != nil {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Could not change MainTextChannel, Please try again later!",
-							m.Author.Mention(),
-						))
-						return
-					}
-
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s MainTextChannel changed to %s successfully!",
-						m.Author.Mention(),
-						mainTextChannel.Mention(),
-					))
-					return
-				}
-
-				mainTextChannel, err := a.Client.Channel(dbGuild.MainTextChannelID)
-				if err != nil {
-					return
-				}
-
-				a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-					"%s The main text channel for matches is %s\n"+
-						"If you want to change it, you can use `-main_text_channel {channel_id}`",
-					m.Author.Mention(),
-					mainTextChannel.Mention(),
-				))
-
-				break
-
-			case "main_voice_channel":
-
-				if len(command) == 2 {
-
-					if m.Author.ID != dbGuild.UserID {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Only the owner of the server can change main_voice_channel!",
-							m.Author.Mention(),
-						))
-						return
-					}
-
-					mainVoiceChannel, err := a.Client.Channel(command[1])
-					if err != nil {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Could not find any voice channels with id: `%s`!",
-							m.Author.Mention(),
-							command[1],
-						))
-						return
-					}
-
-					updateQuery := db.Connection.Model(&models.Guild{}).Where("discord_id =?", dbGuild.DiscordID).Updates(map[string]interface{}{
-						"main_voice_channel_id": mainVoiceChannel.ID,
-					})
-
-					if updateQuery.Error != nil {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s Could not change MainVoiceChannel, Please try again later!",
-							m.Author.Mention(),
-						))
-						return
-					}
-
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s MainVoiceChannel changed to %s successfully!",
-						m.Author.Mention(),
-						mainVoiceChannel.Name,
-					))
-					return
-				}
-
-				mainVoiceChannel, err := a.Client.Channel(dbGuild.MainVoiceChannelID)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-					"%s The main voice channel for matches is %s\n"+
-						"If you want to change it, you can use `-main_voice_channel {voice_channel_id}`",
-					m.Author.Mention(),
-					mainVoiceChannel.Mention(),
-				))
-
-				break
-
-			case "join":
-				if err := a.ConnectToAuthorVoiceChannel(dbGuild, m); err != nil {
-					log.Println(err)
-				}
-				break
-
-			case "pr":
-
-				if dbGuild.UserID != m.Author.ID {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Only the owner of the guild can add/remove/update a player!",
-						m.Author.Mention(),
-					))
-					return
-				}
-
-				if len(command) < 2 {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Arguments not found, Try this pattern: `-pr @mention_a_user`!",
-						m.Author.Mention(),
-					))
-					return
-				}
-
-				if len(m.Mentions) > 1 || m.Mentions[0].Bot {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s You sould mention only one member and it can not be a bot!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				var count int64
-				result := db.Connection.Model(&models.Player{}).
-					Where("user_discord_id =?", m.Mentions[0].ID).
-					Where("guild_id =?", m.GuildID).
-					Count(&count)
-				if result.Error != nil {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Something's wrong, Please try again later!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				if count == 0 {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Player does not exists!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				deleteErr := db.Connection.Where("user_discord_id =?", m.Mentions[0].ID).
-					Where("guild_id =?", m.GuildID).Delete(&models.Player{}).Error
-				if deleteErr != nil {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Cannot remove the player, Please try again later!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-					"%s Player removed successfully!",
-					m.Author.Mention(),
-				))
-				break
-
-			case "pa":
-
-				if dbGuild.UserID != m.Author.ID {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Only the owner of the guild can add/remove/update a player!",
-						m.Author.Mention(),
-					))
-					return
-				}
-
-				if len(command) < 3 {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Arguments not found, Try this pattern: `-pa @mention_a_user [dota2_friend_id]`!",
-						m.Author.Mention(),
-					))
-					return
-				}
-
-				if len(m.Mentions) > 1 || m.Mentions[0].Bot {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s You sould mention only one member and it can not be a bot!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				var count int64
-				result := db.Connection.Model(&models.Player{}).
-					Where("user_discord_id =?", m.Mentions[0].ID).
-					Where("guild_id =?", m.GuildID).
-					Count(&count)
-				if result.Error != nil {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Something's wrong, Please try again later!",
-						m.Author.Mention(),
-					))
-					break
-				}
-				if count > 0 {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Player already added!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				insertErr := db.Connection.Create(&models.Player{
-					Name:          m.Mentions[0].Username,
-					AccountID:     command[2],
-					UserDiscordID: m.Mentions[0].ID,
-					GuildID:       m.GuildID,
-				}).Error
-				if insertErr != nil {
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Cannot add the player, Please try again later!",
-						m.Author.Mention(),
-					))
-					break
-				}
-
-				a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-					"%s Player added successfully!",
-					m.Author.Mention(),
-				))
-				break
-
-			case "mh":
-
-				if len(command) == 2 {
-
-					var matchID = command[1]
-
-					if _, err := strconv.ParseInt(matchID, 10, 64); err != nil {
-						a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-							"%s The match id should be a number!",
-							m.Author.Mention(),
-						))
-						return
-					}
-
-					message, _ := a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s Looking for a match ...",
-						m.Author.Mention(),
-					))
-					s.ChannelTyping(channel.ID)
-
-					msg, err := api.GetMatchHistory(matchID, false, false, false, a.Client, guild)
-					if err != nil {
-						a.Client.ChannelMessageEdit(channel.ID, message.ID, fmt.Sprintf(
-							"%s %s",
-							m.Author.Mention(),
-							err.Error(),
-						))
-						return
-					}
-
-					a.Client.ChannelMessageEdit(channel.ID, message.ID, fmt.Sprintf(
-						"%s %s",
-						m.Author.Mention(),
-						msg,
-					))
-					return
-
-				} else {
-
-					a.Client.ChannelMessageSend(channel.ID, fmt.Sprintf(
-						"%s No match_id argument found\n***Try with an argument like***  `-mh [match_id]`",
-						m.Author.Mention(),
-					))
-					return
-				}
-
-			}
-		}
-	})
-
 	// Open the websocket and begin listening.
-	if err = a.Client.Open(); err != nil {
+	if err = discord.Open(); err != nil {
 		log.Fatalf("Error opening Discord session: %v ", err)
 	}
 
@@ -770,7 +410,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		)
 
 		if err := json.NewDecoder(r.Body).Decode(response); err != nil {
-			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -780,6 +420,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		}
 
 		if response.Provider.Appid != 570 {
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -789,6 +430,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		}
 
 		if response.Map.Name != "start" {
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -798,6 +440,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		}
 
 		if response.Auth.Token == "" {
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -808,7 +451,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 
 		result := db.Connection.Where("token =?", response.Auth.Token).First(&guild)
 		if err := result.Error; err != nil {
-			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -819,7 +462,7 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 
 		discordGuild, err := a.Client.Guild(guild.DiscordID)
 		if err != nil {
-			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
 				"status":  "failed",
@@ -832,6 +475,8 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 		response.Guild = guild
 
 		a.GsiChannel <- response
+
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"code":   200,
 			"status": "success",
