@@ -86,12 +86,13 @@ func (a *Application) ConnectToVoiceChannelIfNotConnected(gameMatch *components.
 				return err
 			}
 
-			a.GuildLiveMatches.Set(gameMatch.DiscordGuild.ID, &components.GuildMatch{
+			guildMatch := &components.GuildMatch{
 				VoiceConnection: voiceConnection,
 				Guild:           gameMatch.Guild,
 				DiscordGuild:    gameMatch.DiscordGuild,
 				Runes:           components.NewRunes(),
-			})
+			}
+			a.GuildLiveMatches.Set(gameMatch.DiscordGuild.ID, guildMatch)
 		}
 	}
 	return nil

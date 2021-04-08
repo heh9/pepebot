@@ -25,22 +25,18 @@ func (g *GuildMatch) PlaySound(sound string) error {
 
 		buffer, err := g.loadSound(sound)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error loading sound file : %v", err)
 		}
 
 		// Start speaking.
-		if err := g.VoiceConnection.Speaking(true); err != nil {
-			return err
-		}
+		g.VoiceConnection.Speaking(true)
 
 		// Send the buffer data.
 		for _, buff := range buffer {
 			g.VoiceConnection.OpusSend <- buff
 		}
 
-		if err := g.VoiceConnection.Speaking(false); err != nil {
-			return err
-		}
+		g.VoiceConnection.Speaking(false)
 	}
 
 	return nil
@@ -67,7 +63,7 @@ func (g *GuildMatch) loadSound(sound string) ([][]byte, error) {
 			if err := file.Close(); err != nil {
 				return nil, err
 			}
-			return buffer, err
+			return buffer, nil
 		}
 
 		if err != nil {
