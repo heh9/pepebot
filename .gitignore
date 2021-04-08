@@ -1,3 +1,4 @@
 config.hcl
 db/data/*
 !db/data/.keep
+NOTES

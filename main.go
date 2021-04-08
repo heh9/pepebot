@@ -37,6 +37,8 @@ func main() {
 		GuildLiveMatches: cmap.New(),
 	}
 
+	log.Fatal(application.getRandomLossSound())
+
 	// register the discord bot and run
 	application.RegisterAndServeBot()
 

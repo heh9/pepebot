@@ -49,7 +49,7 @@ func (g *GuildMatch) loadSound(sound string) ([][]byte, error) {
 
 	buffer := make([][]byte, 0)
 
-	file, err := os.Open(fmt.Sprintf("%s/%s.dcs", config.Map.Sounds.Path, sound))
+	file, err := os.Open(fmt.Sprintf("%s/%s.dca", config.Map.Sounds.Path, sound))
 	if err != nil {
 		return nil, fmt.Errorf("Error opening dca file: %v", err)
 	}

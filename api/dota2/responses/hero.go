@@ -63,6 +63,7 @@ func FeatchHeroes() error {
 	heroes = response.Result.Heroes
 	return nil
 }
+
 func GetHeroByID(id int) (Hero, error) {
 
 	if len(heroes) == 0 {

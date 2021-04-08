@@ -461,8 +461,6 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 			return
 		}
 
-		log.Println(guild.DiscordID)
-
 		discordGuild, err := a.Client.Guild(guild.DiscordID)
 		if err != nil {
 			log.Println(err)
