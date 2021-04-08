@@ -19,29 +19,31 @@ type GuildMatch struct {
 	Runes           *Runes
 }
 
-func (g *GuildMatch) PlaySound(sound string) bool {
+func (g *GuildMatch) PlaySound(sound string) error {
 
 	if g.HasVoiceConnection() {
 
 		buffer, err := g.loadSound(sound)
-
 		if err != nil {
-			return false
+			return err
 		}
 
 		// Start speaking.
-		_ = g.VoiceConnection.Speaking(true)
+		if err := g.VoiceConnection.Speaking(true); err != nil {
+			return err
+		}
 
 		// Send the buffer data.
 		for _, buff := range buffer {
 			g.VoiceConnection.OpusSend <- buff
 		}
 
-		_ = g.VoiceConnection.Speaking(false)
-		return true
+		if err := g.VoiceConnection.Speaking(false); err != nil {
+			return err
+		}
 	}
 
-	return false
+	return nil
 }
 
 // loadSound attempts to load an encoded sound file from disk.

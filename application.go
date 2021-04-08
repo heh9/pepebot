@@ -132,7 +132,7 @@ func (a *Application) CheckRunes() {
 					if ok, clock := gm.Runes.Up(); ok {
 						if coll := collection.New(gm.Runes.RuneTimes); !coll.Has(clock) {
 							gm.Runes.RuneTimes = append(gm.Runes.RuneTimes, clock)
-							gm.PlaySound(gm.Runes.GetRandomVoiceFileName())
+							log.Println(gm.PlaySound(gm.Runes.GetRandomVoiceFileName()))
 						}
 					}
 
@@ -153,10 +153,10 @@ func (a *Application) CheckRunes() {
 							}
 
 							if gameMatch.Player.TeamName != gameMatch.Map.WinTeam {
-								gm.PlaySound(a.getRandomLossSound())
+								log.Println(gm.PlaySound(a.getRandomLossSound()))
 							} else {
 								endStruct.Won = true
-								gm.PlaySound(a.getRandomWinSound())
+								log.Println(gm.PlaySound(a.getRandomWinSound()))
 							}
 
 							gm.Runes.RuneTimes = []string{}
