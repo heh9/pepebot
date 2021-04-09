@@ -108,7 +108,6 @@ func (a *Application) CheckRunes() {
 
 			case components.PreGame:
 				if err := a.ConnectToVoiceChannelIfNotConnected(gameMatch); err != nil {
-					log.Println(err)
 					continue
 				}
 				break
@@ -133,7 +132,7 @@ func (a *Application) CheckRunes() {
 					if ok, clock := gm.Runes.Up(); ok {
 						if coll := collection.New(gm.Runes.RuneTimes); !coll.Has(clock) {
 							gm.Runes.RuneTimes = append(gm.Runes.RuneTimes, clock)
-							log.Println(gm.PlaySound(gm.Runes.GetRandomVoiceFileName()))
+							gm.PlaySound(gm.Runes.GetRandomVoiceFileName())
 						}
 					}
 
@@ -154,10 +153,10 @@ func (a *Application) CheckRunes() {
 							}
 
 							if gameMatch.Player.TeamName != gameMatch.Map.WinTeam {
-								log.Println(gm.PlaySound(a.getRandomLossSound()))
+								gm.PlaySound(a.getRandomLossSound())
 							} else {
 								endStruct.Won = true
-								log.Println(gm.PlaySound(a.getRandomWinSound()))
+								gm.PlaySound(a.getRandomWinSound())
 							}
 
 							gm.Runes.RuneTimes = []string{}
@@ -464,7 +463,6 @@ func (a *Application) ListenAndServeGSIHttpServer(host string, port int) {
 
 		discordGuild, err := a.Client.Guild(guild.DiscordID)
 		if err != nil {
-			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"code":    0,
