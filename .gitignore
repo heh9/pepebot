@@ -1,4 +1,5 @@
 config.hcl
 db/data/*
 !db/data/.keep
+pepebot.db
 NOTES
