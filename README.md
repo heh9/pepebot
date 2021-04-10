@@ -11,7 +11,7 @@
 
 ## Pull docker imgae
 ```bash
-$ docker pull iamalirezaj/pepebot:latest
+$ docker pull mrjoshlab/pepebot:latest
 ```
 
 ## Configurations
@@ -42,7 +42,7 @@ steam {
 
 ## Using docker image
 ```bash
-docker run -dp 9001:9001 --volume $PWD/db/data:/data --volume $PWD/config.hcl:/config/config.hcl iamalirezaj/pepebot:latest --config-file=/config/config.hcl
+docker run -dp 9001:9001 --volume $PWD/db/data:/data --volume $PWD/config.hcl:/config/config.hcl mrjoshlab/pepebot:latest --config-file=/config/config.hcl
 ```
 
 ## docker compose example
@@ -53,7 +53,7 @@ services:
 
   bot:
     container_name: pepebot
-    image: iamalirezaj/pepebot:latest
+    image: mrjoshlab/pepebot:latest
     restart: always
     command: ["--config-file", "/config/config.hcl"]
     ports:
