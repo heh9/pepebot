@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/iamalirezaj/go-opendota"
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/config"
 )
 
 type Response struct {

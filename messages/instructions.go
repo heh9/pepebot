@@ -98,7 +98,7 @@ func SendInstructions(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			"I will connect to main_voice_channel which is `" + dbGuild.MainVoiceChannelID + "` in your server \n" +
 			"and remind you the runes every 5 minutes :sunglasses: ! \n\n" +
 
-			"Give us some feedback or write your issues here > https://github.com/mrjoshlab/pepe.bot/issues :heart:"
+			"Give us some feedback or write your issues here > https://github.com/mrjosh/pepebot/issues :heart:"
 
 	channel, err := s.UserChannelCreate(i.Member.User.ID)
 	if err != nil {

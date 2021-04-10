@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/db"
-	"github.com/mrjoshlab/pepe.bot/models"
+	"github.com/mrjosh/pepebot/db"
+	"github.com/mrjosh/pepebot/models"
 )
 
 func SetMainTextChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {

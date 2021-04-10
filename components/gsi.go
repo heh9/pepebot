@@ -2,7 +2,7 @@ package components
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/models"
+	"github.com/mrjosh/pepebot/models"
 )
 
 const (

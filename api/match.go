@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/api/dota2"
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/api/dota2"
+	"github.com/mrjosh/pepebot/config"
 )
 
 func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session, g *discordgo.Guild) (string, error) {

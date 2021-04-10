@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/config"
 )
 
 type Hero struct {

@@ -65,7 +65,7 @@ services:
 
 ## Pull git repo
 ```bash
-$ git clone https://github.com/mrjosh/pepe.bot.git
+$ git clone https://github.com/mrjosh/pepebot.git
 ```
 
 ## Build the docker image

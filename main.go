@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mrjoshlab/pepe.bot/components"
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/components"
+	"github.com/mrjosh/pepebot/config"
 	cmap "github.com/orcaman/concurrent-map"
 )
 

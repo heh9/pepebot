@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mrjoshlab/pepe.bot/api/dota2/responses"
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/api/dota2/responses"
+	"github.com/mrjosh/pepebot/config"
 )
 
 func GetHeroes() (*responses.HeroesResponse, error) {

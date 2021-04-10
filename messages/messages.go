@@ -2,8 +2,8 @@ package messages
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/db"
-	"github.com/mrjoshlab/pepe.bot/models"
+	"github.com/mrjosh/pepebot/db"
+	"github.com/mrjosh/pepebot/models"
 )
 
 func GetDBGuild(i *discordgo.InteractionCreate) (*models.Guild, error) {

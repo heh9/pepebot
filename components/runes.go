@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mrjoshlab/pepe.bot/config"
+	"github.com/mrjosh/pepebot/config"
 )
 
 const (

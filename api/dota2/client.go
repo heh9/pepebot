@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mrjoshlab/pepe.bot/api/dota2/responses"
+	"github.com/mrjosh/pepebot/api/dota2/responses"
 )
 
 type Client struct {

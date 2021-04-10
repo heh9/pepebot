@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/components"
-	"github.com/mrjoshlab/pepe.bot/disc"
+	"github.com/mrjosh/pepebot/components"
+	"github.com/mrjosh/pepebot/disc"
 	cmap "github.com/orcaman/concurrent-map"
 )
 

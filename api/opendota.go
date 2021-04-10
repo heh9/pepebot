@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mrjoshlab/pepe.bot/api/dota2/responses"
+	"github.com/mrjosh/pepebot/api/dota2/responses"
 	"github.com/iamalirezaj/go-opendota"
 )
 

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mrjoshlab/pepe.bot/api"
+	"github.com/mrjosh/pepebot/api"
 )
 
 func ShowMatchHistory(s *discordgo.Session, i *discordgo.InteractionCreate) {

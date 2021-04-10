@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mrjoshlab/pepe.bot/components"
+	"github.com/mrjosh/pepebot/components"
 	"github.com/stretchr/testify/assert"
 )
 
