@@ -11,6 +11,7 @@ require (
 	github.com/mrjoshlab/go-collection v0.0.0-20190704210143-e2d32f5a639a
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231
 	github.com/polds/imgbase64 v0.0.0-20140820003345-cb7bf37298b7
+	github.com/stretchr/testify v1.7.0 // indirect
 	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.7
 )
