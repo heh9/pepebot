@@ -19,6 +19,17 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Go get packages
+        run: go get .
+
+      - name: Run go tests
+        run: go test ./tests -v -race
+
       - name: Set up Docker Buildx
         uses: crazy-max/ghaction-docker-buildx@v2
         with:

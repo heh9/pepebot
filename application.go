@@ -129,7 +129,7 @@ func (a *Application) CheckRunes() {
 					}
 
 					gm.Runes.ClockTime = strconv.Itoa(gameMatch.Map.ClockTime)
-					if ok, clock := gm.Runes.Up(); ok {
+					if ok, clock, _ := gm.Runes.Up(); ok {
 						if coll := collection.New(gm.Runes.RuneTimes); !coll.Has(clock) {
 							gm.Runes.RuneTimes = append(gm.Runes.RuneTimes, clock)
 							gm.PlaySound(gm.Runes.GetRandomVoiceFileName())

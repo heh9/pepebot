@@ -1,12 +1,16 @@
 package components
 
 import (
-	"log"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
 	"github.com/mrjoshlab/pepe.bot/config"
+)
+
+const (
+	BountyRunesEveryMinutes = 3
 )
 
 type Runes struct {
@@ -27,37 +31,37 @@ func (r *Runes) GetRandomVoiceFileName() string {
 	return r.Sounds[random.Intn(len(r.Sounds))]
 }
 
-func (r *Runes) Up() (bool, string) {
+func (r *Runes) Up() (bool, string, error) {
 
 	unixIntValue, err := strconv.ParseInt(r.ClockTime, 10, 64)
 	if err != nil {
-		log.Println(err)
+		return false, "", err
 	}
 
-	timeStamp := time.Unix(unixIntValue, 0).UTC()
+	var (
+		timeStamp           = time.Unix(unixIntValue, 0).UTC()
+		_, minutes, seconds = timeStamp.Clock()
+		clock               = fmt.Sprintf("%d:%d", minutes, seconds)
+	)
 
-	_, mins, secs := timeStamp.Clock()
-
-	seconds := strconv.Itoa(secs)
-	minutes := strconv.Itoa(mins)
-
-	clock := minutes + ":" + seconds
-
-	if minutes == "0" {
-		return false, clock
+	// If minutes if 0, basiclly the game just started and we dont
+	// Want to remind anything about runes yet.
+	if minutes == 0 {
+		return false, clock, nil
 	}
 
-	if len(minutes) == 2 {
-		if (minutes[1:2] == "4" && seconds == "45") ||
-			(minutes[1:2] == "9" && seconds == "45") {
-			return true, clock
+	// Because we want to calculate every 3 minutes but
+	// We only want to remind the runes 15 seconds before the runes
+	// spawn, we have to add 15 seconds to the current time and if its 60 seconds
+	// We add 1 minute to the minutes value and we get the remaiting of the minutes by BountyRunesEveryMinutes
+	//
+	// If its 0 == Runes are about to swap
+	// Else -> Nothing
+	if seconds+15 == 60 {
+		if (minutes+1)%BountyRunesEveryMinutes == 0 {
+			return true, clock, nil
 		}
-	} else {
-		if (minutes == "4" && seconds == "45") ||
-			(minutes == "9" && seconds == "45") {
-			return true, clock
-		}
 	}
 
-	return false, clock
+	return false, clock, nil
 }

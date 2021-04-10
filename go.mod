@@ -12,5 +12,5 @@ require (
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231
 	github.com/polds/imgbase64 v0.0.0-20140820003345-cb7bf37298b7
 	gorm.io/driver/sqlite v1.1.4
-	gorm.io/gorm v1.21.6
+	gorm.io/gorm v1.21.7
 )
