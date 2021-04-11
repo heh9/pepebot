@@ -20,7 +20,7 @@ func AddPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	dbGuild, err := GetDBGuild(i)
+	dbGuild, err := GetDBGuild(i.GuildID)
 	if err != nil {
 		return
 	}
@@ -129,7 +129,7 @@ func RemovePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	dbGuild, err := GetDBGuild(i)
+	dbGuild, err := GetDBGuild(i.GuildID)
 	if err != nil {
 		return
 	}

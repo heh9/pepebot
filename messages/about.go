@@ -25,3 +25,12 @@ func SendAboutText(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 }
+
+func SendAboutTextWithMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(
+		"%s This bot is a runes reminder bot for dota 2 games that works with"+
+			" Dota 2 GSI API. \n"+
+			"Isn't that cool ? ",
+		m.Author.Mention(),
+	))
+}

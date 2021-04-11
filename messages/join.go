@@ -105,7 +105,7 @@ func ConnectVoiceChannel(a cmap.ConcurrentMap) CommandHandler {
 				return
 			}
 
-			dbGuild, err := GetDBGuild(i)
+			dbGuild, err := GetDBGuild(i.GuildID)
 			if err != nil {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -156,7 +156,7 @@ func DisconnectVoiceChannel(a cmap.ConcurrentMap) CommandHandler {
 			return
 		}
 
-		dbGuild, err := GetDBGuild(i)
+		dbGuild, err := GetDBGuild(i.GuildID)
 		if err != nil {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
