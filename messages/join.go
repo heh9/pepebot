@@ -24,6 +24,16 @@ func ConnectVoiceChannel(a cmap.ConcurrentMap) CommandHandler {
 
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
+		if i.GuildID == "" {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: "Use this command in a discord server!",
+				},
+			})
+			return
+		}
+
 		guild, err := s.Guild(i.GuildID)
 		if err != nil {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -135,6 +145,16 @@ func ConnectVoiceChannel(a cmap.ConcurrentMap) CommandHandler {
 func DisconnectVoiceChannel(a cmap.ConcurrentMap) CommandHandler {
 
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+		if i.GuildID == "" {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionApplicationCommandResponseData{
+					Content: "Use this command in a discord server!",
+				},
+			})
+			return
+		}
 
 		dbGuild, err := GetDBGuild(i)
 		if err != nil {

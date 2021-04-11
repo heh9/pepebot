@@ -10,6 +10,16 @@ import (
 
 func AddPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
+	if i.GuildID == "" {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionApplicationCommandResponseData{
+				Content: "Use this command in a discord server!",
+			},
+		})
+		return
+	}
+
 	dbGuild, err := GetDBGuild(i)
 	if err != nil {
 		return
@@ -108,6 +118,16 @@ func AddPlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func RemovePlayer(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+	if i.GuildID == "" {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionApplicationCommandResponseData{
+				Content: "Use this command in a discord server!",
+			},
+		})
+		return
+	}
 
 	dbGuild, err := GetDBGuild(i)
 	if err != nil {

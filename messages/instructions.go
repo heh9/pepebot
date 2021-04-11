@@ -8,6 +8,16 @@ import (
 
 func SendInstructions(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
+	if i.GuildID == "" {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionApplicationCommandResponseData{
+				Content: fmt.Sprintf("You should use this command in a discord server not a direct message!"),
+			},
+		})
+		return
+	}
+
 	guild, err := s.Guild(i.GuildID)
 	if err != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

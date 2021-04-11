@@ -3,7 +3,7 @@ module github.com/mrjosh/pepebot
 go 1.16
 
 require (
-	github.com/bwmarrin/discordgo v0.23.3-0.20210327033043-f637c37ba2f0
+	github.com/bwmarrin/discordgo v0.23.3-0.20210410202908-577e7dd4f6cc
 	github.com/dghubble/sling v1.3.0
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/hcl v1.0.0

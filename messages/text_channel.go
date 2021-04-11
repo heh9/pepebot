@@ -10,6 +10,16 @@ import (
 
 func SetMainTextChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
+	if i.GuildID == "" {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionApplicationCommandResponseData{
+				Content: "Use this command in a discord server!",
+			},
+		})
+		return
+	}
+
 	guild, err := s.Guild(i.GuildID)
 	if err != nil {
 		return

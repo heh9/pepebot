@@ -198,7 +198,8 @@ func (a *Application) CheckGameEndStatus() {
 				if gm.HasVoiceConnection() {
 					gm.VoiceConnection.Disconnect()
 				}
-				msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client, gm.DiscordGuild)
+				//msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client, gm.DiscordGuild)
+				msg, _ := api.GetMatchHistory(gameMatch.MatchId, true, gameMatch.Won, true, a.Client)
 				a.Client.ChannelMessageSend(gm.Guild.MainTextChannelID, msg)
 				a.GuildLiveMatches.Remove(gm.DiscordGuild.ID)
 			}
@@ -255,108 +256,13 @@ func (a *Application) RegisterAndServeBot() {
 	})
 
 	discord.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
-
 		log.Println("Logged in as !" + event.User.ID)
-
-		commands := []*discordgo.ApplicationCommand{
-			{
-				Name:        "help",
-				Description: "Shows information about pepebot",
-			},
-			{
-				Name:        "join",
-				Description: "Sommons the bot to your voice channel",
-			},
-			{
-				Name:        "leave",
-				Description: "Leave the voice channel",
-			},
-			{
-				Name:        "about",
-				Description: "Shows about pepebot",
-			},
-			{
-				Name:        "instructions",
-				Description: "Shows instructions about how to setup pepebot for your own discord server",
-			},
-			{
-				Name:        "match_history",
-				Description: "Shows summary of a dota2 match",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionInteger,
-						Name:        "match_id",
-						Description: "Dota 2 match id",
-						Required:    true,
-					},
-				},
-			},
-			{
-				Name:        "main_text_channel",
-				Description: "Set main_text_channel for match summaries at the end of every game",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "channel_id",
-						Description: "Text channel id",
-						Required:    true,
-					},
-				},
-			},
-			{
-				Name:        "main_voice_channel",
-				Description: "Set main_voice_channel for pepebot to join every game to remind the runes",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "channel_id",
-						Description: "Voice channel id",
-						Required:    true,
-					},
-				},
-			},
-			{
-				Name:        "player_add",
-				Description: "Assing user's steam id",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionUser,
-						Name:        "user",
-						Description: "The discord user",
-						Required:    true,
-					},
-					{
-						Type:        discordgo.ApplicationCommandOptionString,
-						Name:        "steam_account_id",
-						Description: "User's steam account id",
-						Required:    true,
-					},
-				},
-			},
-			{
-				Name:        "player_remove",
-				Description: "Disconnect a player",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Type:        discordgo.ApplicationCommandOptionUser,
-						Name:        "user",
-						Description: "The discord user",
-						Required:    true,
-					},
-				},
-			},
-		}
-
-		for _, cmd := range commands {
-			if _, err := s.ApplicationCommandCreate(s.State.User.ID, "", cmd); err != nil {
-				log.Panicf("Cannot create '%v' command: %v", cmd.Name, err)
-			}
-		}
-
 	})
 
 	discord.AddHandler(func(s *discordgo.Session, event *discordgo.Connect) {
+
 		log.Println("Connected to discord!")
+
 		s.UpdateStatusComplex(discordgo.UpdateStatusData{
 			Activities: []*discordgo.Activity{
 				{
@@ -365,6 +271,7 @@ func (a *Application) RegisterAndServeBot() {
 				},
 			},
 		})
+
 	})
 
 	discord.AddHandler(func(s *discordgo.Session, event *discordgo.GuildCreate) {
@@ -394,6 +301,101 @@ func (a *Application) RegisterAndServeBot() {
 	// Open the websocket and begin listening.
 	if err = discord.Open(); err != nil {
 		log.Fatalf("Error opening Discord session: %v ", err)
+	}
+
+	commands := []*discordgo.ApplicationCommand{
+		{
+			Name:        "help",
+			Description: "Shows information about pepebot",
+		},
+		{
+			Name:        "join",
+			Description: "Sommons the bot to your voice channel",
+		},
+		{
+			Name:        "leave",
+			Description: "Leave the voice channel",
+		},
+		{
+			Name:        "about",
+			Description: "Shows about pepebot",
+		},
+		{
+			Name:        "instructions",
+			Description: "Shows instructions about how to setup pepebot for your own discord server",
+		},
+		{
+			Name:        "match_history",
+			Description: "Shows summary of a dota2 match",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "match_id",
+					Description: "Dota 2 match id",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "main_text_channel",
+			Description: "Set main_text_channel for match summaries at the end of every game",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "channel_id",
+					Description: "Text channel id",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "main_voice_channel",
+			Description: "Set main_voice_channel for pepebot to join every game to remind the runes",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "channel_id",
+					Description: "Voice channel id",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "player_add",
+			Description: "Assing user's steam id",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user",
+					Description: "The discord user",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "steam_account_id",
+					Description: "User's steam account id",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "player_remove",
+			Description: "Disconnect a player",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user",
+					Description: "The discord user",
+					Required:    true,
+				},
+			},
+		},
+	}
+
+	for _, cmd := range commands {
+		if _, err := discord.ApplicationCommandCreate(discord.State.User.ID, "", cmd); err != nil {
+			log.Panicf("Cannot create '%v' command: %v", cmd.Name, err)
+		}
 	}
 
 	log.Println("Pepe.bot is now running!")

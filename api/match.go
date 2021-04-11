@@ -12,7 +12,7 @@ import (
 	"github.com/mrjosh/pepebot/config"
 )
 
-func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session, g *discordgo.Guild) (string, error) {
+func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session) (string, error) {
 
 	message := ""
 	client := dota2.NewClient(config.Map.Steam.WebApiToken)
@@ -53,80 +53,86 @@ func GetMatchHistory(mid string, sgs bool, w bool, rJ bool, d *discordgo.Session
 
 	message += fmt.Sprintln() + fmt.Sprintln()
 
-	if damage, hero, player := match.GetMostHeroDamage(); damage != 0 {
+	if damage, hero, _ := match.GetMostHeroDamage(); damage != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+		message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s`", damage, hero.LocalizedName)
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
-			message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s` %s", damage, hero.LocalizedName, u.Mention())
-		} else {
+		//message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s` %s", damage, hero.LocalizedName, u.Mention())
+		//} else {
 
-			message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s`", damage, hero.LocalizedName)
-		}
-
-		message += fmt.Sprintln()
-	}
-
-	if kills, hero, player := match.GetMostHeroKills(); kills != 0 {
-
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
-
-			message += fmt.Sprintf("Most Kills                          **(%d)** `%s` %s", kills, hero.LocalizedName, u.Mention())
-		} else {
-
-			message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
-		}
+		//message += fmt.Sprintf("Most Hero Damage        **(%d)** `%s`", damage, hero.LocalizedName)
+		//}
 
 		message += fmt.Sprintln()
 	}
 
-	if lastHits, hero, player := match.GetMostHeroLastHits(); lastHits != 0 {
+	if kills, hero, _ := match.GetMostHeroKills(); kills != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
-			message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
-		} else {
+		//message += fmt.Sprintf("Most Kills                          **(%d)** `%s` %s", kills, hero.LocalizedName, u.Mention())
+		//} else {
 
-			message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s`", lastHits, hero.LocalizedName)
-		}
-
-		message += fmt.Sprintln()
-	}
-
-	if healing, hero, player := match.GetMostHeroHealing(); healing != 0 {
-
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
-
-			message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s` %s", healing, hero.LocalizedName, u.Mention())
-		} else {
-
-			message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s`", healing, hero.LocalizedName)
-		}
+		//message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
+		//}
+		message += fmt.Sprintf("Most Kills                          **(%d)** `%s`", kills, hero.LocalizedName)
 
 		message += fmt.Sprintln()
 	}
 
-	if denies, hero, player := match.GetMostHeroDenies(); denies != 0 {
+	if lastHits, hero, _ := match.GetMostHeroLastHits(); lastHits != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
-			message += fmt.Sprintf("Most Denies                    **(%d)** `%s` %s", denies, hero.LocalizedName, u.Mention())
-		} else {
+		//message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s` %s", lastHits, hero.LocalizedName, u.Mention())
+		//} else {
 
-			message += fmt.Sprintf("Most Denies                    **(%d)** `%s`", denies, hero.LocalizedName)
-		}
+		//message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s`", lastHits, hero.LocalizedName)
+		//}
+		message += fmt.Sprintf("Most Last Hits                 **(%d)** `%s`", lastHits, hero.LocalizedName)
 
 		message += fmt.Sprintln()
 	}
 
-	if towerDamage, hero, player := match.GetMostHeroTowerDamage(); towerDamage != 0 {
+	if healing, hero, _ := match.GetMostHeroHealing(); healing != 0 {
 
-		if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
 
-			message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s` %s", towerDamage, hero.LocalizedName, u.Mention())
-		} else {
+		//message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s` %s", healing, hero.LocalizedName, u.Mention())
+		//} else {
 
-			message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s`", towerDamage, hero.LocalizedName)
-		}
+		//message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s`", healing, hero.LocalizedName)
+		//}
+		message += fmt.Sprintf("Most Hero Healing         **(%d)** `%s`", healing, hero.LocalizedName)
+
+		message += fmt.Sprintln()
+	}
+
+	if denies, hero, _ := match.GetMostHeroDenies(); denies != 0 {
+
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+
+		//message += fmt.Sprintf("Most Denies                    **(%d)** `%s` %s", denies, hero.LocalizedName, u.Mention())
+		//} else {
+
+		//message += fmt.Sprintf("Most Denies                    **(%d)** `%s`", denies, hero.LocalizedName)
+		//}
+		message += fmt.Sprintf("Most Denies                    **(%d)** `%s`", denies, hero.LocalizedName)
+
+		message += fmt.Sprintln()
+	}
+
+	if towerDamage, hero, _ := match.GetMostHeroTowerDamage(); towerDamage != 0 {
+
+		//if u, err := GetDiscordUserBySteamAccountID(d, g, player.AccountID); err == nil {
+
+		//message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s` %s", towerDamage, hero.LocalizedName, u.Mention())
+		//} else {
+
+		//message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s`", towerDamage, hero.LocalizedName)
+		//}
+		message += fmt.Sprintf("Most Tower Damage    **(%d)** `%s`", towerDamage, hero.LocalizedName)
 	}
 
 	if rJ {

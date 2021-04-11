@@ -10,32 +10,39 @@ import (
 
 func ShowMatchHistory(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	guild, err := s.Guild(i.GuildID)
-	if err != nil {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionApplicationCommandResponseData{
-				Content: fmt.Sprintf(
-					"%s %s",
-					i.Member.Mention(),
-					"Could not find guild!!",
-				),
-			},
-		})
-		return
+	var user *discordgo.User
+	if i.GuildID == "" {
+		user = i.User
+	} else {
+		user = i.Member.User
 	}
+
+	//guild, err := s.Guild(i.GuildID)
+	//if err != nil {
+	//s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	//Type: discordgo.InteractionResponseChannelMessageWithSource,
+	//Data: &discordgo.InteractionApplicationCommandResponseData{
+	//Content: fmt.Sprintf(
+	//"%s %s",
+	//user.Mention(),
+	//"Could not find guild!!",
+	//),
+	//},
+	//})
+	//return
+	//}
 
 	matchID := i.Data.Options[0].IntValue()
 	matchIDString := strconv.Itoa(int(matchID))
 
-	msg, err := api.GetMatchHistory(matchIDString, false, false, false, s, guild)
+	msg, err := api.GetMatchHistory(matchIDString, false, false, false, s)
 	if err != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionApplicationCommandResponseData{
 				Content: fmt.Sprintf(
 					"%s %s",
-					i.Member.Mention(),
+					user.Mention(),
 					err.Error(),
 				),
 			},
@@ -48,7 +55,7 @@ func ShowMatchHistory(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Data: &discordgo.InteractionApplicationCommandResponseData{
 			Content: fmt.Sprintf(
 				"%s %s",
-				i.Member.Mention(),
+				user.Mention(),
 				msg,
 			),
 		},
